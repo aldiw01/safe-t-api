@@ -24,6 +24,6 @@
     "url": "https://github.com/aldiw01/safe-t/issues"
   },
   "scripts": {
-    "start": "node ./src/appServer"
+    "start": "node src/index"
   }
 }

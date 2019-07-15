@@ -3,10 +3,10 @@ const bodyParser = require('body-parser');
 var mailService = require('./mailService.js');
 const Client = require('mariasql');
 const c = new Client({
-	host: 'localhost',
-	user: 'root',
-	password: '',
-	db: 'safe_t'
+	host: 'us-cdbr-iron-east-02.cleardb.net',
+	user: 'bfbc78a2ca3f50',
+	password: '1c2ebb72',
+	db: 'heroku_3833beda05a522d'
 });
 
 module.exports = {
