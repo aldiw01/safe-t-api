@@ -65,6 +65,7 @@ module.exports = {
 		c.end();
 	},
 	verifyToken: function (req, res) {
+		const waktu = new Date().toISOString();
 		c.query("SELECT t1.email, t2.id FROM `verification_token` t1 INNER JOIN `data_user` t2 ON (t1.token=? AND t1.status=0 AND t1.email=t2.email)", [req.token], { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.json(err);
@@ -73,19 +74,19 @@ module.exports = {
 
 			if (rows.info.numRows !== '0') {
 				rows.forEach(function (items) {
-					c.query("UPDATE `verification_token` SET status='1' WHERE `email`=?", [items[0]], { metadata: true, useArray: true }, function (err, rows) {
+					c.query("UPDATE `verification_token` SET `status`='1', `updated`=? WHERE `email`=?", [waktu, items[0]], { metadata: true, useArray: true }, function (err, rows) {
 						if (err) {
 							res.json(err);
 							throw err;
 						}
 					});
-					c.query("INSERT INTO `data_point` (`user_id`, `point`) VALUES (?, 0)", [items[1]], { metadata: true, useArray: true }, function (err, rows) {
+					c.query("INSERT INTO `data_point` (`user_id`, `point`, `created`, `updated`) VALUES (?, 0, ?, ?)", [items[1], waktu, waktu], { metadata: true, useArray: true }, function (err, rows) {
 						if (err) {
 							res.json(err);
 							throw err;
 						}
 					});
-					c.query("UPDATE `data_user` SET status='1' WHERE email=?", [items[0]], { metadata: true, useArray: true }, function (err, rows) {
+					c.query("UPDATE `data_user` SET status='1', `updated`=? WHERE `email`=?", [waktu, items[0]], { metadata: true, useArray: true }, function (err, rows) {
 						if (err) {
 							res.json(err);
 							throw err;
@@ -109,7 +110,8 @@ module.exports = {
 		c.end();
 	},
 	verifyUser: function (req, res) {
-		c.query("UPDATE `data_user` SET status='1' WHERE id=?", [req.id], { metadata: true, useArray: true }, function (err, rows) {
+		const waktu = new Date().toISOString();
+		c.query("UPDATE `data_user` SET `status`='1', `updated`=? WHERE `id`=?", [waktu, req.id], { metadata: true, useArray: true }, function (err, rows) {
 			if (err)
 				throw err;
 
@@ -145,7 +147,8 @@ module.exports = {
 	},
 	forgotPassword(req, res, token) {
 		const expired = new Date().valueOf() + 3 * 60 * 60 * 1000;
-		var request = [req.email, token, expired];
+		const waktu = new Date().toISOString()
+		var request = [req.email, token, expired, waktu, waktu];
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
@@ -166,7 +169,7 @@ module.exports = {
 					success: false
 				});
 			} else {
-				c.query("INSERT INTO `reset_password` (`email`, `token`, `expired`, `status`) VALUES (?, ?, ?, 0)", request, { metadata: true, useArray: true }, function (err, rows) {
+				c.query("INSERT INTO `reset_password` (`email`, `token`, `expired`, `status`, `created`, `updated`) VALUES (?, ?, ?, 0, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
 					if (err)
 						throw err;
 
@@ -178,7 +181,8 @@ module.exports = {
 	},
 	forgotPassword_Admin(req, res, token) {
 		const expired = new Date().valueOf() + 3 * 60 * 60 * 1000;
-		var request = [req.email, token, expired];
+		const waktu = new Date().toISOString();
+		var request = [req.email, token, expired, waktu, waktu];
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
@@ -199,7 +203,7 @@ module.exports = {
 					success: false
 				});
 			} else {
-				c.query("INSERT INTO `reset_password` (`email`, `token`, `expired`, `status`) VALUES (?, ?, ?, 2)", request, { metadata: true, useArray: true }, function (err, rows) {
+				c.query("INSERT INTO `reset_password` (`email`, `token`, `expired`, `status`, `created`, `updated`) VALUES (?, ?, ?, 2, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
 					if (err)
 						throw err;
 
@@ -236,7 +240,8 @@ module.exports = {
 		c.end();
 	},
 	forgotPassword_editPassword: function (req, password, res) {
-		c.query("UPDATE `data_user` SET password=? WHERE email=?", [password, req.email], { metadata: true, useArray: true }, function (err, rows) {
+		const waktu = new Date().toISOString();
+		c.query("UPDATE `data_user` SET `password`=?, `updated`=? WHERE `email`=?", [password, waktu, req.email], { metadata: true, useArray: true }, function (err, rows) {
 			if (err)
 				throw err;
 			res.json({
@@ -245,7 +250,7 @@ module.exports = {
 				affectedRows: rows.info.affectedRows
 			});
 		});
-		c.query("UPDATE `reset_password` SET status=1 WHERE token=?", [req.token], { metadata: true, useArray: true }, function (err, rows) {
+		c.query("UPDATE `reset_password` SET `status`=1, `updated`=? WHERE `token`=?", [waktu, req.token], { metadata: true, useArray: true }, function (err, rows) {
 			if (err)
 				throw err;
 		});
@@ -253,7 +258,8 @@ module.exports = {
 		c.end();
 	},
 	forgotPassword_Admin_editPassword: function (req, password, res) {
-		c.query("UPDATE `data_admin` SET password=? WHERE email=?", [password, req.email], { metadata: true, useArray: true }, function (err, rows) {
+		const waktu = new Date().toISOString();
+		c.query("UPDATE `data_admin` SET `password`=?, `updated`=? WHERE `email`=?", [password, waktu, req.email], { metadata: true, useArray: true }, function (err, rows) {
 			if (err)
 				throw err;
 			res.json({
@@ -262,7 +268,7 @@ module.exports = {
 				affectedRows: rows.info.affectedRows
 			});
 		});
-		c.query("UPDATE `reset_password` SET status=3 WHERE token=?", [req.token], { metadata: true, useArray: true }, function (err, rows) {
+		c.query("UPDATE `reset_password` SET `status`=3, `updated`=? WHERE `token`=?", [waktu, req.token], { metadata: true, useArray: true }, function (err, rows) {
 			if (err)
 				throw err;
 		});
@@ -370,18 +376,19 @@ module.exports = {
 		c.end();
 	},
 	newUser: function (req, password, res) {
-		var request = [password, req.name, req.email, req.phone, req.citizen_id, req.captured_id, req.gender, req.address];
+		const waktu = new Date().toISOString();
+		var request = [password, req.name, req.email, req.phone, req.citizen_id, req.captured_id, req.gender, req.address, waktu, waktu];
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("INSERT INTO `verification_token`(`email`, `token`, `status`) VALUES (?, ?, '0')", [req.email, req.token], { metadata: true, useArray: true }, function (err, rows) {
+		c.query("INSERT INTO `verification_token`(`email`, `token`, `status`, `created`, `updated`) VALUES (?, ?, '0', ?, ?)", [req.email, req.token, waktu, waktu], { metadata: true, useArray: true }, function (err, rows) {
 			if (err)
 				throw err;
 
 			mailService.sendVerification(req.email, req.name, req.token);
 		});
-		c.query("INSERT INTO `data_user`(`password`, `name`, `email`, `phone`, `citizen_id`, `captured_id`, `gender`, `address`, `status`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '0')", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("INSERT INTO `data_user`(`password`, `name`, `email`, `phone`, `citizen_id`, `captured_id`, `gender`, `address`, `status`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '0', ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err)
 				throw err;
 
@@ -395,12 +402,13 @@ module.exports = {
 		c.end();
 	},
 	updateUser: function (req, res) {
-		var request = [req.name, req.email, req.phone, req.citizen_id, req.captured_id, req.gender, req.address, req.id];
+		const waktu = new Date().toISOString();
+		var request = [req.name, req.email, req.phone, req.citizen_id, req.captured_id, req.gender, req.address, waktu, req.id];
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("UPDATE `data_user` SET `name`=?,`email`=?,`phone`=?,`citizen_id`=?,`captured_id`=?,`gender`=?,`address`=? WHERE id=?", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("UPDATE `data_user` SET `name`=?,`email`=?,`phone`=?,`citizen_id`=?,`captured_id`=?,`gender`=?,`address`=?, `updated`=? WHERE id=?", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err)
 				throw err;
 
@@ -437,12 +445,13 @@ module.exports = {
 		c.end();
 	},
 	newAdmin: function (req, password, res) {
-		var request = [req.name, password, req.email, req.citizen_id, req.captured_id]
+		const waktu = new Date().toISOString();
+		var request = [req.name, password, req.email, req.citizen_id, req.captured_id, waktu, waktu]
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("INSERT INTO `data_admin` (`name`, `password`, `email`, `citizen_id`, `captured_id`, `privilege_id`) VALUES (?, ?, ?, ?, ?, 0)", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("INSERT INTO `data_admin` (`name`, `password`, `email`, `citizen_id`, `captured_id`, `privilege_id`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, 0, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err)
 				throw err;
 
@@ -482,7 +491,7 @@ module.exports = {
 		c.end();
 	},
 	getAdmin: function (req, res) {
-		c.query("SELECT * FROM `data_admin` WHERE id=?", [req.id], { metadata: true, useArray: true }, function (err, rows) {
+		c.query("SELECT * FROM `data_admin` WHERE `id`=?", [req.id], { metadata: true, useArray: true }, function (err, rows) {
 			if (err)
 				throw err;
 
@@ -508,7 +517,7 @@ module.exports = {
 		c.end();
 	},
 	getVehicleAll: function (req, res) {
-		c.query('SELECT * FROM `data_kendaraan` ORDER BY id', null, { metadata: true, useArray: true }, function (err, rows) {
+		c.query('SELECT * FROM `data_kendaraan` ORDER BY `id`', null, { metadata: true, useArray: true }, function (err, rows) {
 			if (err)
 				throw err;
 
@@ -536,7 +545,7 @@ module.exports = {
 	},
 	getVehicle: function (req, res) {
 		var request = [req.id];
-		c.query("SELECT * FROM `data_kendaraan` WHERE id=?", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("SELECT * FROM `data_kendaraan` WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err)
 				throw err;
 
@@ -563,12 +572,13 @@ module.exports = {
 		c.end();
 	},
 	newVehicle: function (req, res) {
-		var request = [req.body.owner, req.body.vehicle_id, req.body.brand, req.body.type, req.body.build_year, req.body.color]
+		const waktu = new Date().toISOString();
+		var request = [req.body.owner, req.body.vehicle_id, req.body.brand, req.body.type, req.body.build_year, req.body.color, waktu, waktu]
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("INSERT INTO `data_kendaraan` (`owner`, `vehicle_id`, `brand`, `type`, `build_year`, `color`) VALUES (?, ?, ?, ?, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("INSERT INTO `data_kendaraan` (`owner`, `vehicle_id`, `brand`, `type`, `build_year`, `color`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.json(err);
 				throw err;
@@ -584,12 +594,13 @@ module.exports = {
 		c.end();
 	},
 	updateVehicle: function (req, res) {
-		var request = [req.body.owner, req.body.vehicle_id, req.body.brand, req.body.type, req.body.build_year, req.body.color, req.params.id]
+		const waktu = new Date().toISOString();
+		var request = [req.body.owner, req.body.vehicle_id, req.body.brand, req.body.type, req.body.build_year, req.body.color, waktu, req.params.id]
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("UPDATE `data_kendaraan` SET owner=?, vehicle_id=?, brand=?, type=?, build_year=?, color=? WHERE id=?", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("UPDATE `data_kendaraan` SET `owner`=?, `vehicle_id`=?, `brand`=?, `type`=?, `build_year`=?, `color`=?, `updated`=? WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.json(err);
 				throw err;
@@ -605,7 +616,7 @@ module.exports = {
 		c.end();
 	},
 	deleteVehicle: function (req, res) {
-		c.query("DELETE FROM `data_kendaraan` WHERE id=?", [req.params.id], { metadata: true, useArray: true }, function (err, rows) {
+		c.query("DELETE FROM `data_kendaraan` WHERE `id`=?", [req.params.id], { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.json(err);
 				throw err;
@@ -710,12 +721,13 @@ module.exports = {
 		c.end();
 	},
 	newTicket: function (req, res) {
-		var request = [req.reporter_id, req.violator_id, req.vehicle_id, req.violation_type, req.detail, req.incident_date, req.documentation]
+		const waktu = new Date().toISOString();
+		var request = [req.reporter_id, req.violator_id, req.vehicle_id, req.violation_type, req.detail, req.incident_date, req.documentation, waktu, waktu]
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("INSERT INTO `data_pelanggaran` (`reporter_id`, `violator_id`, `vehicle_id`, `violation_type`, `detail`, `incident_date`, `documentation`, `status`) VALUES (?, ?, ?, ?, ?, ?, ?, 0)", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("INSERT INTO `data_pelanggaran` (`reporter_id`, `violator_id`, `vehicle_id`, `violation_type`, `detail`, `incident_date`, `documentation`, `status`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.json(err);
 				throw err;
@@ -731,13 +743,13 @@ module.exports = {
 		c.end();
 	},
 	updateTicket: function (req, res) {
-		var request = [req.body.reporter_id, req.body.violator_id, req.body.vehicle_id, req.body.violation_type, req.body.detail, req.body.incident_date, req.params.id]
-		console.log(request)
+		const waktu = new Date().toISOString();
+		var request = [req.body.reporter_id, req.body.violator_id, req.body.vehicle_id, req.body.violation_type, req.body.detail, req.body.incident_date, waktu, req.params.id]
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("UPDATE `data_pelanggaran` SET reporter_id=?, violator_id=?, vehicle_id=?, violation_type=?, detail=?, incident_date=? WHERE id=?", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("UPDATE `data_pelanggaran` SET `reporter_id`=?, `violator_id`=?, `vehicle_id`=?, `violation_type`=?, `detail`=?, `incident_date`=?, `updated`=? WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.json(err);
 				throw err;
@@ -753,19 +765,20 @@ module.exports = {
 		c.end();
 	},
 	closeTicket: function (req, res) {
+		const waktu = new Date().toISOString();
 		c.query("SELECT t1.reporter_id, t2.point FROM `data_pelanggaran` t1 INNER JOIN `data_point` t2 ON t1.id=?", [req.id], { metadata: true, useArray: true }, function (err, rows) {
 			if (err)
 				throw err;
 
 			if (rows.info.numRows !== '0') {
 				rows.forEach(function (items) {
-					c.query("UPDATE `data_pelanggaran` SET status=1 WHERE id=?", [req.id], { metadata: true, useArray: true }, function (err, rows) {
+					c.query("UPDATE `data_pelanggaran` SET `status`=1, `updated`=? WHERE `id`=?", [waktu, req.id], { metadata: true, useArray: true }, function (err, rows) {
 						if (err) {
 							res.json(err);
 							throw err;
 						}
 					});
-					c.query("UPDATE `data_point` SET point=? WHERE user_id=?", [parseInt(items[1]) + 10, items[0]], { metadata: true, useArray: true }, function (err, rows) {
+					c.query("UPDATE `data_point` SET `point`=?, `updated`=? WHERE `user_id`=?", [parseInt(items[1]) + 10, waktu, items[0]], { metadata: true, useArray: true }, function (err, rows) {
 						if (err) {
 							res.json(err);
 							throw err;
@@ -805,12 +818,13 @@ module.exports = {
 		c.end();
 	},
 	setAdminPrivilege: function (req, res) {
-		var request = [req.body.privilege_id, req.params.id];
+		const waktu = new Date().toISOString();
+		var request = [req.body.privilege_id, waktu, req.params.id];
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("UPDATE `data_admin` SET privilege_id=? WHERE id=?", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("UPDATE `data_admin` SET `privilege_id`=?, `updated`=? WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err)
 				throw err;
 
@@ -893,12 +907,13 @@ module.exports = {
 		c.end();
 	},
 	newPoint: function (req, point, res) {
-		var request = [req.body.user_id, req.body.point]
+		const waktu = new Date().toISOString();
+		var request = [req.body.user_id, req.body.point, waktu, waktu];
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("INSERT INTO `data_point` (`user_id`, `point`) VALUES (?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("INSERT INTO `data_point` (`user_id`, `point`, `created`, `updated`) VALUES (?, ?, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.json(err);
 				throw err;
@@ -914,12 +929,13 @@ module.exports = {
 		c.end();
 	},
 	updatePoint: function (req, point, res) {
-		var request = [point, req.uid]
+		const waktu = new Date().toISOString();
+		var request = [point, waktu, req.uid]
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("UPDATE `data_point` SET point=? WHERE user_id=?", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("UPDATE `data_point` SET `point`=?, `updated`=? WHERE `user_id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.json(err);
 				throw err;
@@ -1086,12 +1102,13 @@ module.exports = {
 		c.end();
 	},
 	newHistory: function (req, res) {
-		var request = [req.ticket_id, req.from_id, req.to_id, req.info, req.message]
+		const waktu = new Date().toISOString();
+		var request = [req.ticket_id, req.from_id, req.to_id, req.info, req.message, waktu, waktu]
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("INSERT INTO `history` (`ticket_id`, `from_id`, `to_id`, `info`, `message`, `status`) VALUES (?, ?, ?, ?, ?, 0)", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("INSERT INTO `history` (`ticket_id`, `from_id`, `to_id`, `info`, `message`, `status`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, 0, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.json(err);
 				throw err;
@@ -1107,12 +1124,13 @@ module.exports = {
 		c.end();
 	},
 	updateHistory: function (req, res) {
-		var request = [req.body.ticket_id, req.body, from_id, req.body.to_id, req.body.info, req.body.message, req.params.id]
+		const waktu = new Date().toISOString();
+		var request = [req.body.ticket_id, req.body.from_id, req.body.to_id, req.body.info, req.body.message, waktu, req.params.id]
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("UPDATE `history` SET ticket_id=?, from_id=?, to_id=?, info=?, message=? WHERE id=?", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("UPDATE `history` SET `ticket_id`=?, `from_id`=?, `to_id`=?, `info`=?, `message`=?, `updated`=? WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.json(err);
 				throw err;
