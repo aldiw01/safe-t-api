@@ -312,6 +312,10 @@ app.get('/api/vehicle/:id', (req, res) => {
 	db.getVehicle(req.params, res);
 })
 
+app.get('/api/vehicle/plate/:id', (req, res) => {
+	db.getVehiclePlate(req.params, res);
+})
+
 app.post('/api/vehicle', jwtMW, (req, res) => {
 	db.newVehicle(req, res);
 })
