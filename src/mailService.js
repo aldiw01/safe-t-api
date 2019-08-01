@@ -32,7 +32,7 @@ module.exports = {
       from: '"Safe-t" <safet.imv@gmail.com>', // sender address
       to: target, // list of receivers
       subject: "[Safe-t] User Verification", // Subject line
-      html: "Hello <strong>" + username + "</strong><br/>Anda telah mendaftarkan email <strong>" + target + "</strong> untuk akun Safe-t. Silahkan klik tautan berikut untuk memverifikasi akun anda.<br/>http://localhost:3000/login/" + token + "<br/><br/>Sincerely,<br/>Safe-t team" // html body
+      html: "Hello <strong>" + username + "</strong><br/>Anda telah mendaftarkan email <strong>" + target + "</strong> untuk akun Safe-t. Silahkan klik tautan berikut untuk memverifikasi akun anda.<br/>https://safe-t.netlify.com/login/" + token + "<br/><br/>Sincerely,<br/>Safe-t team" // html body
     };
 
     // send mail with defined transport object
@@ -72,7 +72,7 @@ module.exports = {
       from: '"Safe-t" <safet.imv@gmail.com>', // sender address
       to: target, // list of receivers
       subject: "[Safe-t] Reset Password", // Subject line
-      html: "Hello <strong>" + username + "</strong><br/>Anda telah mengirimkan permintaan reset password untuk akun Safe-t (<strong>" + target + "</strong>). Silahkan klik tautan berikut untuk mereset password akun anda.<br/>http://localhost:3000/resetpassword/" + token + "<br/><br/>Tautan diatas dapat digunakan selama 3 jam, untuk mendapatkan tautan lainnya silahkan kunjungi http://localhost:3000/login/<br/><br/>Sincerely,<br/>Safe-t team"
+      html: "Hello <strong>" + username + "</strong><br/>Anda telah mengirimkan permintaan reset password untuk akun Safe-t (<strong>" + target + "</strong>). Silahkan klik tautan berikut untuk mereset password akun anda.<br/>https://safe-t.netlify.com/resetpassword/" + token + "<br/><br/>Tautan diatas dapat digunakan selama 3 jam, untuk mendapatkan tautan lainnya silahkan kunjungi https://safe-t.netlify.com/login/<br/><br/>Sincerely,<br/>Safe-t team"
     };
 
     // send mail with defined transport object

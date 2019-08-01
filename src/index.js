@@ -484,11 +484,11 @@ app.get('/api/history/:id', (req, res) => {
 })
 
 app.get('/api/history/from/:id', (req, res) => {
-	db.getFromUserHistory(req.params, res);
+	db.getFromHistory(req.params, res);
 })
 
 app.get('/api/history/to/:id', (req, res) => {
-	db.getToUserHistory(req.params, res);
+	db.getToHistory(req.params, res);
 })
 
 app.get('/api/history/ticket/:id', (req, res) => {
