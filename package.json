@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "crypto-js": "^3.1.9-1",
+    "dotenv": "^8.0.0",
     "express": "^4.16.4",
     "express-fileupload": "^1.1.4",
     "express-jwt": "^5.3.1",
@@ -24,6 +25,7 @@
     "url": "https://github.com/aldiw01/safe-t/issues"
   },
   "scripts": {
-    "start": "node src/index"
+    "start": "node src/index",
+    "start-dev": "nodemon src/index"
   }
 }

@@ -1,3 +1,5 @@
+require('dotenv/config')
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
@@ -21,13 +23,13 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 // Instantiating the express-jwt middleware
 const jwtMW = exjwt({
-	secret: 'safe-t_dijalan_ADMIN'
+	secret: process.env.APP_TOKEN_ADMIN_SECRET
 });
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 // CONSTANT LIST
-const ADMIN_SECRET = 'safe-t_dijalan_ADMIN';
-const USER_SECRET = 'safe-t_dijalan_USER';
+const ADMIN_SECRET = process.env.APP_TOKEN_ADMIN_SECRET;
+const USER_SECRET = process.env.APP_TOKEN_USER_SECRET;
 // Initialize Cipher Option
 const ALGORITHM = 'aes-192-cbc';
 const SECRET_CIPHER = 'safe-t_dijalan';
@@ -151,7 +153,7 @@ app.post('/api/loginUser', (req, res) => {
 	console.log(password);
 
 	db.cekLoginUser(email, password, function (err, data) {
-		if (data.length === 1 && data[0].status === "1") {
+		if (data.length === 1 && data[0].status === "2") {
 			//If all credentials are correct do this
 			let token = jwt.sign({
 				id: data[0].id,
@@ -173,11 +175,18 @@ app.post('/api/loginUser', (req, res) => {
 				token
 			});
 		}
+		else if (data.length === 1 && data[0].status === "1") {
+			res.json({
+				success: false,
+				token: null,
+				err: 'User is not validated by Admin'
+			});
+		}
 		else if (data.length === 1 && data[0].status === "0") {
 			res.json({
 				success: false,
 				token: null,
-				err: 'User is not verified'
+				err: 'Email is not verified'
 			});
 		}
 		else {
@@ -202,6 +211,10 @@ app.get('/api/user', jwtMW, (req, res) => {
 
 app.get('/api/user/:id', (req, res) => {
 	db.getUser(req.params, res);
+})
+
+app.get('/api/user/status/:id', jwtMW, (req, res) => {
+	db.getUserStatus(req.params, res);
 })
 
 app.post('/api/user', (req, res) => {
@@ -246,6 +259,10 @@ app.put('/api/user/:id', jwtMW, (req, res) => {
 })
 
 app.delete('/api/user/:id', jwtMW, (req, res) => {
+	db.deactivateUser(req.params, res);
+})
+
+app.delete('/api/user/ever/:id', jwtMW, (req, res) => {
 	db.deleteUser(req.params, res);
 })
 
@@ -257,6 +274,10 @@ app.get('/api/admin', jwtMW, (req, res) => {
 
 app.get('/api/admin/:id', jwtMW, (req, res) => {
 	db.getAdmin(req.params, res);
+})
+
+app.get('/api/admin/status/:id', jwtMW, (req, res) => {
+	db.getAdminStatus(req.params, res);
 })
 
 app.post('/api/admin', (req, res) => {
@@ -299,6 +320,10 @@ app.put('/api/admin/:id', jwtMW, (req, res) => {
 })
 
 app.delete('/api/admin/:id', jwtMW, (req, res) => {
+	db.deactivateAdmin(req, res);
+})
+
+app.delete('/api/admin/ever/:id', jwtMW, (req, res) => {
 	db.deleteAdmin(req, res);
 })
 
@@ -330,12 +355,16 @@ app.delete('/api/vehicle/:id', jwtMW, (req, res) => {
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 // API Pelanggaran
-app.get('/api/ticket', (req, res) => {
+app.get('/api/ticket', jwtMW, (req, res) => {
 	db.getTicketAll(req.body, res);
 })
 
 app.get('/api/ticket/:id', (req, res) => {
 	db.getTicket(req.params, res);
+})
+
+app.get('/api/ticket/status/:id', jwtMW, (req, res) => {
+	db.getTicketStatus(req.params, res);
 })
 
 app.get('/api/ticket/user/:id', (req, res) => {
@@ -495,7 +524,7 @@ app.get('/api/history/ticket/:id', (req, res) => {
 	db.getTicketHistory(req.params, res);
 })
 
-app.post('/api/history', jwtMW, (req, res) => {
+app.post('/api/history', (req, res) => {
 	db.newHistory(req.body, res);
 })
 

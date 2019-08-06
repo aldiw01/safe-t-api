@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 18, 2019 at 04:30 PM
+-- Generation Time: Aug 06, 2019 at 11:28 PM
 -- Server version: 10.1.30-MariaDB
 -- PHP Version: 5.6.33
 
@@ -320,7 +320,8 @@ CREATE TABLE `data_point` (
 --
 
 INSERT INTO `data_point` (`id`, `user_id`, `point`, `created`, `updated`) VALUES
-(1, 102, '50', '2019-07-14 15:05:31', '2019-07-14 23:27:04');
+(1, 102, '50', '2019-07-14 15:05:31', '2019-07-14 23:27:04'),
+(2, 103, '0', '2019-08-06T21:17:52.671Z', '2019-08-06T21:17:52.671Z');
 
 -- --------------------------------------------------------
 
@@ -449,7 +450,7 @@ INSERT INTO `data_user` (`id`, `password`, `name`, `email`, `phone`, `citizen_id
 (99, 'k4K5meDLZZ1IUDtqeWKgCVNirqawFSqCvp0XrsTsi4U=', 'Hong Schwender', 'waistingproperty@Sabreenervatingmazourka.info', '169-995-8864', '8903604700891050', 'test.jpg', 'Female', '9693 Caprice Ave', '0', '2019-06-08 22:55:47', '2019-06-20 10:31:40'),
 (100, 'k4K5meDLZZ1IUDtqeWKgCVNirqawFSqCvp0XrsTsi4U=', 'Jamie Donoway', 'practicalitys@nutmiscellanies.com', '345-782-5305', '3803795468433300', 'test.jpg', 'Female', '8224 Devon St', '0', '2019-06-08 22:55:47', '2019-06-20 10:31:40'),
 (101, 'k4K5meDLZZ1IUDtqeWKgCVNirqawFSqCvp0XrsTsi4U=', 'Aldi Wiranata', 'aldi_safet@gmail.com', '089678000631', '3173061009970007', '2019-06-13T16-58-45.574Z_New Doc 2018-01-22_2.jpg', 'Male', 'Bandung No.1', '1', '2019-06-13 23:58:45', '2019-07-13 00:50:28'),
-(102, 'k4K5meDLZZ1IUDtqeWKgCVNirqawFSqCvp0XrsTsi4U=', 'Aldi Wiranata', 'aldiw01@gmail.com', '089678000631', '3173061010100007', '2019-06-23T18-36-26.482Z_My Certificate_22.jpg', 'Male', 'Kp.Pangkalan RT.006/RW.010 No.68, Jakarta', '1', '2019-06-24 01:36:26', '2019-07-14 15:05:31');
+(103, 'k4K5meDLZZ1IUDtqeWKgCVNirqawFSqCvp0XrsTsi4U=', 'Aldi Wiranata', 'aldiw01@gmail.com', '089678000631', '2477669718933280', '2019-08-06T21-08-08.915Z_aDVawEQg_700w_0.jpg', 'Male', 'Jl. Sukabirus No.50, Bandung', '2', '2019-08-06T21:08:08.949Z', '2019-08-06T21:17:52.671Z');
 
 -- --------------------------------------------------------
 
@@ -532,7 +533,8 @@ CREATE TABLE `verification_token` (
 --
 
 INSERT INTO `verification_token` (`id`, `email`, `token`, `status`, `created`, `updated`) VALUES
-(1, 'aldiw01@gmail.com', 'f8c29aa0478ab711871070ba29ef51ba', '1', '2019-06-24 01:36:26', '2019-07-14 15:05:31');
+(1, 'aldiw01@gmail.com', 'f8c29aa0478ab711871070ba29ef51ba', '1', '2019-06-24 01:36:26', '2019-08-06T21:10:33.878Z'),
+(2, 'aldiw01@gmail.com', 'b560836c42dc137db0f444a5ed45db14', '1', '2019-08-06T21:08:08.949Z', '2019-08-06T21:10:33.878Z');
 
 -- --------------------------------------------------------
 
@@ -577,16 +579,16 @@ ALTER TABLE `data_kendaraan`
 --
 ALTER TABLE `data_pelanggaran`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `reporter_id` (`reporter_id`),
   ADD KEY `violator_id` (`violator_id`),
-  ADD KEY `violation_type` (`violation_type`);
+  ADD KEY `violation_type` (`violation_type`),
+  ADD KEY `TEST` (`reporter_id`);
 
 --
 -- Indexes for table `data_point`
 --
 ALTER TABLE `data_point`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`);
+  ADD KEY `TEST` (`user_id`);
 
 --
 -- Indexes for table `data_user`
@@ -644,13 +646,13 @@ ALTER TABLE `data_pelanggaran`
 -- AUTO_INCREMENT for table `data_point`
 --
 ALTER TABLE `data_point`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `data_user`
 --
 ALTER TABLE `data_user`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=103;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=104;
 
 --
 -- AUTO_INCREMENT for table `history`
@@ -668,31 +670,13 @@ ALTER TABLE `reset_password`
 -- AUTO_INCREMENT for table `verification_token`
 --
 ALTER TABLE `verification_token`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `violation_list`
 --
 ALTER TABLE `violation_list`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- Constraints for dumped tables
---
-
---
--- Constraints for table `data_pelanggaran`
---
-ALTER TABLE `data_pelanggaran`
-  ADD CONSTRAINT `data_pelanggaran_ibfk_1` FOREIGN KEY (`reporter_id`) REFERENCES `data_user` (`id`),
-  ADD CONSTRAINT `data_pelanggaran_ibfk_2` FOREIGN KEY (`violator_id`) REFERENCES `data_kendaraan` (`id`),
-  ADD CONSTRAINT `data_pelanggaran_ibfk_3` FOREIGN KEY (`violation_type`) REFERENCES `violation_list` (`id`);
-
---
--- Constraints for table `data_point`
---
-ALTER TABLE `data_point`
-  ADD CONSTRAINT `data_point_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `data_user` (`id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
