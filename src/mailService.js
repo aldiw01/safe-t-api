@@ -1,11 +1,23 @@
 "use strict";
 const nodemailer = require("nodemailer");
+const { google } = require("googleapis");
+const OAuth2 = google.auth.OAuth2;
+const oauth2Client = new OAuth2(
+  process.env.APP_CLIENT_ID, // ClientID
+  process.env.APP_CLIENT_SECRET, // Client Secret
+  process.env.APP_REDIRECT_URL // Redirect URL
+);
+oauth2Client.setCredentials({
+  refresh_token: process.env.APP_REFRESH_TOKEN
+});
+
 const footer = "<em><strong>ATTENTION:</strong><br/>This electronic mail and/or any files transmitted within may contain confidential or copyright information. If you are not the intended recipient, you must not keep, forward, copy, use, or rely on this electronic mail, and any such action that unauthorized and prohibited. Also, you should check this electronic mail and any attachments for the presence of viruses. We accepts no liability for any damages caused by any viruses transmitted by this electronic mail.</em>"
 
 // async..await is not allowed in global scope, must use a wrapper
 module.exports = {
   sendVerification: function (target, username, token) {
 
+    const accessToken = oauth2Client.getAccessToken();
     // Generate test SMTP service account from ethereal.email
     // Only needed if you don't have a real mail account for testing
     // let account = await nodemailer.createTestAccount();
@@ -20,7 +32,8 @@ module.exports = {
         user: process.env.APP_EMAIL_USER,
         clientId: process.env.APP_CLIENT_ID,
         clientSecret: process.env.APP_CLIENT_SECRET,
-        refreshToken: process.env.APP_REFRESH_TOKEN
+        refreshToken: process.env.APP_REFRESH_TOKEN,
+        accessToken: accessToken
       }
     });
 
@@ -50,6 +63,8 @@ module.exports = {
     // Preview URL: https://ethereal.email/message/WaQKMgKddxQDoou...
   },
   sendResetPassword: function (target, username, token, res) {
+    const accessToken = oauth2Client.getAccessToken();
+
     let transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 465,
@@ -59,7 +74,8 @@ module.exports = {
         user: process.env.APP_EMAIL_USER,
         clientId: process.env.APP_CLIENT_ID,
         clientSecret: process.env.APP_CLIENT_SECRET,
-        refreshToken: process.env.APP_REFRESH_TOKEN
+        refreshToken: process.env.APP_REFRESH_TOKEN,
+        accessToken: accessToken
       }
     });
 
