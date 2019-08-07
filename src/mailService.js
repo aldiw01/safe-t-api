@@ -50,7 +50,7 @@ module.exports = {
       if (error) {
         console.log('Error occurred');
         console.log(error.message);
-        return process.exit(1);
+        return
       }
 
       console.log('Message sent successfully!');
@@ -96,7 +96,7 @@ module.exports = {
           message: error.message,
           success: false
         });
-        return process.exit(1);
+        return
       }
       console.log('Message sent successfully!');
       res.send({
