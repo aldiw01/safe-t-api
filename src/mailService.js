@@ -1,7 +1,6 @@
 "use strict";
 const nodemailer = require("nodemailer");
-const user = process.env.APP_EMAIL_USER;
-const pass = process.env.APP_EMAIL_PASSWORD;
+const footer = "<em><strong>ATTENTION:</strong><br/>This electronic mail and/or any files transmitted within may contain confidential or copyright information. If you are not the intended recipient, you must not keep, forward, copy, use, or rely on this electronic mail, and any such action that unauthorized and prohibited. Also, you should check this electronic mail and any attachments for the presence of viruses. We accepts no liability for any damages caused by any viruses transmitted by this electronic mail.</em>"
 
 // async..await is not allowed in global scope, must use a wrapper
 module.exports = {
@@ -14,25 +13,23 @@ module.exports = {
     // create reusable transporter object using the default SMTP transport
     let transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      requireTLS: true, // use TLS
+      port: 465,
+      secure: true,
       auth: {
-        user: user,
-        pass: pass
-      },
-      tls: {
-        // do not fail on invalid certs
-        rejectUnauthorized: false
+        type: "OAuth2",
+        user: process.env.APP_EMAIL_USER,
+        clientId: process.env.APP_CLIENT_ID,
+        clientSecret: process.env.APP_CLIENT_SECRET,
+        refreshToken: process.env.APP_REFRESH_TOKEN
       }
     });
 
     // setup email data with unicode symbols
     let message = {
-      from: '"Safe-t" <safet.imv@gmail.com>', // sender address
+      from: process.env.APP_EMAIL_NAME + ' <' + process.env.APP_EMAIL_USER + '>', // sender address
       to: target, // list of receivers
       subject: "[Safe-t] User Verification", // Subject line
-      html: "Hello <strong>" + username + "</strong><br/>Anda telah mendaftarkan email <strong>" + target + "</strong> untuk akun Safe-t. Silahkan klik tautan berikut untuk memverifikasi akun anda.<br/>" + process.env.APP_URL_LOGIN + token + "<br/><br/>Sincerely,<br/>Safe-t team" // html body
+      html: "Hello <strong>" + username + "</strong><br/>Anda telah mendaftarkan email <strong>" + target + "</strong> untuk akun Safe-t. Silahkan klik tautan berikut untuk memverifikasi akun anda.<br/>" + process.env.APP_URL_LOGIN + token + "<br/><br/>Sincerely,<br/>Safe-t team<br/><br/>" + footer // html body
     };
 
     // send mail with defined transport object
@@ -55,24 +52,23 @@ module.exports = {
   sendResetPassword: function (target, username, token, res) {
     let transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      requireTLS: true, // use TLS
+      port: 465,
+      secure: true,
       auth: {
-        user: user,
-        pass: pass
-      },
-      tls: {
-        rejectUnauthorized: false
+        type: "OAuth2",
+        user: process.env.APP_EMAIL_USER,
+        clientId: process.env.APP_CLIENT_ID,
+        clientSecret: process.env.APP_CLIENT_SECRET,
+        refreshToken: process.env.APP_REFRESH_TOKEN
       }
     });
 
     // setup email data with unicode symbols
     let message = {
-      from: '"Safe-t" <safet.imv@gmail.com>', // sender address
+      from: process.env.APP_EMAIL_NAME + ' <' + process.env.APP_EMAIL_USER + '>', // sender address
       to: target, // list of receivers
       subject: "[Safe-t] Reset Password", // Subject line
-      html: "Hello <strong>" + username + "</strong><br/>Anda telah mengirimkan permintaan reset password untuk akun Safe-t (<strong>" + target + "</strong>). Silahkan klik tautan berikut untuk mereset password akun anda.<br/>" + process.env.APP_URL_RESET_PASSWORD + token + "<br/><br/>Tautan diatas dapat digunakan selama 3 jam, untuk mendapatkan tautan lainnya silahkan kunjungi " + process.env.APP_URL_LOGIN + "<br/><br/>Sincerely,<br/>Safe-t team"
+      html: "Hello <strong>" + username + "</strong><br/>Anda telah mengirimkan permintaan reset password untuk akun Safe-t (<strong>" + target + "</strong>). Silahkan klik tautan berikut untuk mereset password akun anda.<br/>" + process.env.APP_URL_RESET_PASSWORD + token + "<br/><br/>Tautan diatas dapat digunakan selama 3 jam, untuk mendapatkan tautan lainnya silahkan kunjungi " + process.env.APP_URL_LOGIN + "<br/><br/>Sincerely,<br/>Safe-t team<br/><br/>" + footer
     };
 
     // send mail with defined transport object
