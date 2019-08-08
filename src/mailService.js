@@ -1,15 +1,7 @@
 "use strict";
 const nodemailer = require("nodemailer");
-const { google } = require("googleapis");
-const OAuth2 = google.auth.OAuth2;
-const oauth2Client = new OAuth2(
-  process.env.APP_CLIENT_ID, // ClientID
-  process.env.APP_CLIENT_SECRET, // Client Secret
-  process.env.APP_REDIRECT_URL // Redirect URL
-);
-oauth2Client.setCredentials({
-  refresh_token: process.env.APP_REFRESH_TOKEN
-});
+const user = process.env.APP_EMAIL_USER;
+const pass = process.env.APP_EMAIL_PASSWORD;
 
 const footer = "<em><strong>ATTENTION:</strong><br/>This electronic mail and/or any files transmitted within may contain confidential or copyright information. If you are not the intended recipient, you must not keep, forward, copy, use, or rely on this electronic mail, and any such action that unauthorized and prohibited. Also, you should check this electronic mail and any attachments for the presence of viruses. We accepts no liability for any damages caused by any viruses transmitted by this electronic mail.</em>"
 
@@ -17,7 +9,6 @@ const footer = "<em><strong>ATTENTION:</strong><br/>This electronic mail and/or 
 module.exports = {
   sendVerification: function (target, username, token) {
 
-    const accessToken = oauth2Client.getAccessToken();
     // Generate test SMTP service account from ethereal.email
     // Only needed if you don't have a real mail account for testing
     // let account = await nodemailer.createTestAccount();
@@ -25,16 +16,16 @@ module.exports = {
     // create reusable transporter object using the default SMTP transport
     let transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
-      port: 465,
-      tls: true,
-      secure: true,
+      port: 587,
+      secure: false,
+      requireTLS: true, // use TLS
       auth: {
-        type: "OAuth2",
-        user: process.env.APP_EMAIL_USER,
-        clientId: process.env.APP_CLIENT_ID,
-        clientSecret: process.env.APP_CLIENT_SECRET,
-        refreshToken: process.env.APP_REFRESH_TOKEN,
-        accessToken: accessToken
+        user: user,
+        pass: pass
+      },
+      tls: {
+        // do not fail on invalid certs
+        rejectUnauthorized: false
       }
     });
 
@@ -51,7 +42,7 @@ module.exports = {
       if (error) {
         console.log('Error occurred');
         console.log(error.message);
-        return
+        return;
       }
 
       console.log('Message sent successfully!');
@@ -64,20 +55,17 @@ module.exports = {
     // Preview URL: https://ethereal.email/message/WaQKMgKddxQDoou...
   },
   sendResetPassword: function (target, username, token, res) {
-    const accessToken = oauth2Client.getAccessToken();
-
     let transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
-      port: 465,
-      tls: true,
-      secure: true,
+      port: 587,
+      secure: false,
+      requireTLS: true, // use TLS
       auth: {
-        type: "OAuth2",
-        user: process.env.APP_EMAIL_USER,
-        clientId: process.env.APP_CLIENT_ID,
-        clientSecret: process.env.APP_CLIENT_SECRET,
-        refreshToken: process.env.APP_REFRESH_TOKEN,
-        accessToken: accessToken
+        user: user,
+        pass: pass
+      },
+      tls: {
+        rejectUnauthorized: false
       }
     });
 
@@ -98,7 +86,7 @@ module.exports = {
           message: error.message,
           success: false
         });
-        return
+        return;
       }
       console.log('Message sent successfully!');
       res.send({
