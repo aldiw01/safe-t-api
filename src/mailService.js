@@ -3,7 +3,7 @@ const nodemailer = require("nodemailer");
 const user = process.env.APP_EMAIL_USER;
 const pass = process.env.APP_EMAIL_PASSWORD;
 
-const footer = "<em><strong>ATTENTION:</strong><br/>This electronic mail and/or any files transmitted within may contain confidential or copyright information. If you are not the intended recipient, you must not keep, forward, copy, use, or rely on this electronic mail, and any such action that unauthorized and prohibited. Also, you should check this electronic mail and any attachments for the presence of viruses. We accepts no liability for any damages caused by any viruses transmitted by this electronic mail.</em>"
+const footer = "<em><strong>ATTENTION:</strong><br/>This electronic mail and/or any files transmitted within may contain confidential or copyright information. If you are not the intended recipient, you must not keep, forward, copy, use, or rely on this electronic mail, and any such action that unauthorized and prohibited. Also, you should check this electronic mail and any attachments for the presence of virus(es). We accepts no liability for any damages caused by any viruses transmitted by this electronic mail.</em>"
 
 // async..await is not allowed in global scope, must use a wrapper
 module.exports = {

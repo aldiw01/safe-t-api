@@ -7,7 +7,10 @@ const exjwt = require('express-jwt');
 var db = require('./database.js');
 const crypto = require("crypto");
 var mailService = require('./mailService.js');
-var path = require('path');
+const path = require('path');
+const aws = require('aws-sdk');
+const multer = require('multer');
+const multerS3 = require('multer-s3');
 
 // Instantiating the express app
 const app = express();
@@ -28,6 +31,7 @@ const jwtMW = exjwt({
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 // CONSTANT LIST
+
 const ADMIN_SECRET = process.env.APP_TOKEN_ADMIN_SECRET;
 const USER_SECRET = process.env.APP_TOKEN_USER_SECRET;
 // Initialize Cipher Option
@@ -41,8 +45,62 @@ const CIPHER_BASE = 'base64';
 const HASH_ALGORITHM = 'sha256';
 
 /////////////////////////////////////////////////////////////////////////////////////////////
-// Multer for File Handling
-const multer = require('multer');
+// Multer for File Handling in AWS
+
+aws.config.update({
+	accessKeyId: process.env.APP_AWS_ACCESS_KEY,
+	secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY,
+	region: process.env.APP_AWS_REGION
+})
+
+const s3 = new aws.S3();
+
+const storageAdminsAWS = multerS3({
+	s3: s3,
+	bucket: process.env.APP_AWS_BUCKET + '/admins',
+	contentType: multerS3.AUTO_CONTENT_TYPE,
+	metadata: function (req, file, cb) {
+		cb(null, { fieldName: "Safe-T Admin ID" });
+	},
+	key: function (req, file, cb) {
+		cb(null, Date.now().toString())
+	}
+})
+
+const storagetTicketsAWS = multerS3({
+	s3: s3,
+	bucket: process.env.APP_AWS_BUCKET + '/tickets',
+	contentType: multerS3.AUTO_CONTENT_TYPE,
+	metadata: function (req, file, cb) {
+		cb(null, { fieldName: "Safe-T Ticket" });
+	},
+	key: function (req, file, cb) {
+		cb(null, Date.now().toString())
+	}
+})
+
+const storageUsersAWS = multerS3({
+	s3: s3,
+	bucket: process.env.APP_AWS_BUCKET + '/users',
+	contentType: multerS3.AUTO_CONTENT_TYPE,
+	metadata: function (req, file, cb) {
+		cb(null, { fieldName: "Safe-T User ID" });
+	},
+	key: function (req, file, cb) {
+		cb(null, Date.now().toString())
+	}
+})
+
+function fileFilter(req, file, cb) {
+	if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+		cb(null, true);
+	} else {
+		cb({ message: 'Only for image (jpg/jpeg/png).' }, false);
+	}
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+// Multer for File Handling in Local
 
 const storageAdmin = multer.diskStorage({
 	destination: function (req, file, cb) {
@@ -90,6 +148,7 @@ function fileFilter(req, file, cb) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 // LOGIN ROUTE
+
 app.post('/api/loginAdmin', (req, res) => {
 	const { email } = req.body;
 	console.log(req.body);
@@ -205,6 +264,7 @@ app.get('/api/', jwtMW /* Using the express jwt MW here */, (req, res) => {
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 // API User
+
 app.get('/api/user', jwtMW, (req, res) => {
 	db.getUserAll(req.body, res);
 })
@@ -219,7 +279,7 @@ app.get('/api/user/status/:id', jwtMW, (req, res) => {
 
 app.post('/api/user', (req, res) => {
 	var upload = multer({
-		storage: storageUser,
+		storage: storageUsersAWS,
 		limits: {
 			fileSize: 1024 * 1024
 		},
@@ -247,7 +307,7 @@ app.post('/api/user', (req, res) => {
 
 		const password = crypto.createHmac(HASH_ALGORITHM, SECRET_CIPHER).update(req.body.password).digest(CIPHER_BASE);
 		const token = crypto.randomBytes(16).toString('hex');
-		req.body.captured_id = req.file.filename;
+		req.body.captured_id = req.file.key;
 		req.body.token = token;
 
 		db.newUser(req.body, password, res);
@@ -266,8 +326,14 @@ app.delete('/api/user/ever/:id', jwtMW, (req, res) => {
 	db.deleteUser(req.params, res);
 })
 
+app.delete('/api/user/all/ever', jwtMW, (req, res) => {
+	console.log('deleteUserAll')
+	db.deleteUserAll(req.params, res);
+})
+
 /////////////////////////////////////////////////////////////////////////////////////////////
 // API Admin
+
 app.get('/api/admin', jwtMW, (req, res) => {
 	db.getAdminAll(req.body, res);
 })
@@ -282,7 +348,7 @@ app.get('/api/admin/status/:id', jwtMW, (req, res) => {
 
 app.post('/api/admin', (req, res) => {
 	var upload = multer({
-		storage: storageAdmin,
+		storage: storageAdminsAWS,
 		limits: {
 			fileSize: 1024 * 1024
 		},
@@ -309,7 +375,7 @@ app.post('/api/admin', (req, res) => {
 		// password += mykey.final('hex');
 
 		const password = crypto.createHmac(HASH_ALGORITHM, SECRET_CIPHER).update(req.body.password).digest(CIPHER_BASE);
-		req.body.captured_id = req.file.filename;
+		req.body.captured_id = req.file.key;
 
 		db.newAdmin(req.body, password, res);
 	})
@@ -329,6 +395,7 @@ app.delete('/api/admin/ever/:id', jwtMW, (req, res) => {
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 // API Kendaraan
+
 app.get('/api/vehicle', (req, res) => {
 	db.getVehicleAll(req.body, res);
 })
@@ -353,8 +420,13 @@ app.delete('/api/vehicle/:id', jwtMW, (req, res) => {
 	db.deleteVehicle(req, res);
 })
 
+app.delete('/api/vehicle/all/ever', jwtMW, (req, res) => {
+	db.deleteVehicleAll(req, res);
+})
+
 /////////////////////////////////////////////////////////////////////////////////////////////
 // API Pelanggaran
+
 app.get('/api/ticket', jwtMW, (req, res) => {
 	db.getTicketAll(req.body, res);
 })
@@ -373,7 +445,7 @@ app.get('/api/ticket/user/:id', (req, res) => {
 
 app.post('/api/ticket', (req, res) => {
 	var upload = multer({
-		storage: storageTicket,
+		storage: storagetTicketsAWS,
 		limits: {
 			fileSize: 1024 * 1024
 		},
@@ -395,7 +467,7 @@ app.post('/api/ticket', (req, res) => {
 		// Everything went fine.
 		console.log('Upload success.');
 
-		req.body.documentation = req.file.filename;
+		req.body.documentation = req.file.key;
 
 		db.newTicket(req.body, res);
 	})
@@ -410,62 +482,20 @@ app.put('/api/ticket/close/:id', jwtMW, (req, res) => {
 })
 
 app.delete('/api/ticket/:id', jwtMW, (req, res) => {
-	db.deleteTicket(req, res);
+	db.deactivateTicket(req.params, res);
 })
 
-/////////////////////////////////////////////////////////////////////////////////////////////
-// Forgot and Reset Password
-app.post('/api/forgot-password', (req, res) => {
-	const token = crypto.randomBytes(16).toString('hex');
-	db.forgotPassword(req.body, res, token);
+app.delete('/api/ticket/ever/:id', jwtMW, (req, res) => {
+	db.deleteTicket(req.params, res);
 })
 
-app.post('/api/forgot-password-admin', (req, res) => {
-	const token = crypto.randomBytes(16).toString('hex');
-	db.forgotPassword_Admin(req.body, res, token);
-})
-
-app.get('/api/forgot-password/get-token/:token', (req, res) => {
-	db.forgotPassword_getToken(req.params, res);
-})
-
-app.put('/api/forgot-password/edit-password', (req, res) => {
-	const password = crypto.createHmac(HASH_ALGORITHM, SECRET_CIPHER).update(req.body.password).digest(CIPHER_BASE);
-	db.forgotPassword_editPassword(req.body, password, res);
-})
-
-app.put('/api/forgot-password/edit-password-admin', (req, res) => {
-	const password = crypto.createHmac(HASH_ALGORITHM, SECRET_CIPHER).update(req.body.password).digest(CIPHER_BASE);
-	db.forgotPassword_Admin_editPassword(req.body, password, res);
-})
-
-// UPLOAD FILE
-app.post('/api/uploadImage', jwtMW, (req, res) => {
-	// var upload = multer({
-	// 	storage: storageVehicle,
-	// 	limits: {
-	// 		fileSize: 1024 * 1024
-	// 	},
-	// 	fileFilter: fileFilter
-	// }).single('fileImage');
-	// upload(req, res, function (err) {
-	// 	if (err instanceof multer.MulterError) {
-	// 		// A Multer error occurred when uploading.
-	// 		res.send(err);
-	// 		return
-	// 	} else if (err) {
-	// 		// An unknown error occurred when uploading.
-	// 		res.send(err);
-	// 		return
-	// 	}
-	// 	// Everything went fine.
-	// 	res.status(200).send({ message: "upload success." });
-	// })
-	// console.log(req.body);
+app.delete('/api/ticket/all/ever', jwtMW, (req, res) => {
+	db.deleteTicketAll(req.params, res);
 })
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 // API Point
+
 app.get('/api/point', (req, res) => {
 	db.getPointAll(req.body, res);
 })
@@ -502,8 +532,13 @@ app.delete('/api/point/:uid', jwtMW, (req, res) => {
 	db.deletePoint(req.params, res);
 })
 
+app.delete('/api/point/all/ever', jwtMW, (req, res) => {
+	db.deletePointAll(req.params, res);
+})
+
 /////////////////////////////////////////////////////////////////////////////////////////////
 // API History
+
 app.get('/api/history', (req, res) => {
 	db.getHistoryAll(req.body, res);
 })
@@ -532,12 +567,107 @@ app.put('/api/history/:id', jwtMW, (req, res) => {
 	db.updateHistory(req, res);
 })
 
-app.delete('/api/history/:id', jwtMW, (req, res) => {
-	db.deleteHistory(req.params, res);
+app.delete('/api/history/ticket/:id', jwtMW, (req, res) => {
+	db.deleteTicketHistory(req.params, res);
+})
+
+app.delete('/api/history/all/ever', jwtMW, (req, res) => {
+	db.deleteHistoryAll(req.params, res);
+})
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+// API Get Image
+
+app.get('/api/image/admin/:imageID', (req, res) => {
+	var params = {
+		Bucket: process.env.APP_AWS_BUCKET + '/admins',
+		Key: req.params.imageID
+	};
+	s3.getObject(params, function (err, data) {
+		if (err) {
+			res.send({
+				message: err.message,
+				statusCode: err.statusCode
+			});
+			console.log(err);
+			return
+		}
+		res.writeHead(200, { 'Content-Type': data.ContentType });
+		res.write(data.Body, 'binary');
+		res.end(null, 'binary');
+	});
+})
+
+app.get('/api/image/ticket/:imageID', (req, res) => {
+	var params = {
+		Bucket: process.env.APP_AWS_BUCKET + '/tickets',
+		Key: req.params.imageID
+	};
+	s3.getObject(params, function (err, data) {
+		if (err) {
+			res.send({
+				message: err.message,
+				statusCode: err.statusCode
+			});
+			console.log(err);
+			return
+		}
+		res.writeHead(200, { 'Content-Type': data.ContentType });
+		res.write(data.Body, 'binary');
+		res.end(null, 'binary');
+	});
+})
+
+app.get('/api/image/user/:imageID', (req, res) => {
+	var params = {
+		Bucket: process.env.APP_AWS_BUCKET + '/users',
+		Key: req.params.imageID
+	};
+	s3.getObject(params, function (err, data) {
+		if (err) {
+			res.send({
+				message: err.message,
+				statusCode: err.statusCode
+			});
+			console.log(err);
+			return
+		}
+		res.writeHead(200, { 'Content-Type': data.ContentType });
+		res.write(data.Body, 'binary');
+		res.end(null, 'binary');
+	});
+})
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+// Forgot and Reset Password
+
+app.post('/api/forgot-password', (req, res) => {
+	const token = crypto.randomBytes(16).toString('hex');
+	db.forgotPassword(req.body, res, token);
+})
+
+app.post('/api/forgot-password-admin', (req, res) => {
+	const token = crypto.randomBytes(16).toString('hex');
+	db.forgotPassword_Admin(req.body, res, token);
+})
+
+app.get('/api/forgot-password/get-token/:token', (req, res) => {
+	db.forgotPassword_getToken(req.params, res);
+})
+
+app.put('/api/forgot-password/edit-password', (req, res) => {
+	const password = crypto.createHmac(HASH_ALGORITHM, SECRET_CIPHER).update(req.body.password).digest(CIPHER_BASE);
+	db.forgotPassword_editPassword(req.body, password, res);
+})
+
+app.put('/api/forgot-password/edit-password-admin', (req, res) => {
+	const password = crypto.createHmac(HASH_ALGORITHM, SECRET_CIPHER).update(req.body.password).digest(CIPHER_BASE);
+	db.forgotPassword_Admin_editPassword(req.body, password, res);
 })
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 // API List
+
 app.post('/api/check-admin-registered', (req, res) => {
 	db.checkAdminRegistered(req.body, res);
 })
@@ -562,11 +692,54 @@ app.post('/api/user/verify-token', (req, res) => {
 	db.verifyToken(req.body, res);
 })
 
-// Test only
-app.post('/api/user/verify/send-mail', (req, res) => {
-	const token = crypto.randomBytes(16).toString('hex');
-	mailService.sendVerification(req.body.email, req.body.name, token);
+app.delete('/api/token/verification/all', (req, res) => {
+	db.deleteVerificationToken(req.params, res);
 })
+
+app.delete('/api/token/reset-password/all', (req, res) => {
+	db.deleteResetPasswordToken(req.params, res);
+})
+
+app.delete('/api/token/inactive/all', (req, res) => {
+	db.deleteInactiveToken(req.params, res);
+})
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+// Test only
+
+// app.post('/api/user/verify/send-mail', (req, res) => {
+// 	const token = crypto.randomBytes(16).toString('hex');
+// 	mailService.sendVerification(req.body.email, req.body.name, token);
+// })
+
+// UPLOAD FILE
+// app.post('/api/upload/tickets', (req, res) => {
+// 	var upload = multer({
+// 		storage: storagetTicketsAWS,
+// 		limits: {
+// 			fileSize: 1024 * 1024
+// 		},
+// 		fileFilter: fileFilter
+// 	}).single('fileImage');
+// 	upload(req, res, function (err) {
+// 		if (err instanceof multer.MulterError) {
+// 			// A Multer error occurred when uploading.
+// 			res.send(err);
+// 			return
+// 		} else if (err) {
+// 			// An unknown error occurred when uploading.
+// 			res.send(err);
+// 			return
+// 		}
+// 		// Everything went fine.
+// 		res.status(200).send({
+// 			message: "upload success.",
+// 			imageUrl: req.file.location,
+// 			file: req.file
+// 		});
+// 	})
+// 	console.log(req.body);
+// })
 
 // Error handling 
 app.use(function (err, req, res, next) {
@@ -576,6 +749,10 @@ app.use(function (err, req, res, next) {
 	else {
 		next(err);
 	}
+});
+
+app.get('/', (req, res) => {
+	res.redirect('https://safe-t.netlify.com');
 });
 
 // Starting the app on PORT 3000

@@ -579,6 +579,33 @@ module.exports = {
 		});
 		c.end();
 	},
+	deleteUserAll: function (req, res) {
+		c.query("DELETE FROM `data_point`", null, { metadata: true, useArray: true }, function (err, rows) {
+			if (err) {
+				res.status(500).send({ message: "Error 500: Internal Server Error" });
+				console.log(err);
+				return
+			}
+		});
+		c.query("DELETE FROM `data_user`", null, { metadata: true, useArray: true }, function (err, rows) {
+			if (err) {
+				res.status(500).send({ message: "Error 500: Internal Server Error" });
+				console.log(err);
+				return
+			}
+			console.log(rows.info)
+			if (rows.info.affectedRows < 1) {
+				res.status(404).send({ message: 'Data not found.' });
+			} else {
+				res.json({
+					affectedRows: rows.info.affectedRows,
+					message: "All User has deleted successfully :[",
+					success: true
+				});
+			}
+		});
+		c.end();
+	},
 	getAdminAll: function (req, res) {
 		c.query("SELECT * FROM `data_admin` ORDER BY `id`", null, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
@@ -897,6 +924,22 @@ module.exports = {
 		});
 		c.end();
 	},
+	deleteVehicleAll: function (req, res) {
+		c.query("DELETE FROM `data_kendaraan`", null, { metadata: true, useArray: true }, function (err, rows) {
+			if (err) {
+				res.status(500).send({ message: "Error 500: Internal Server Error" });
+				console.log(err);
+				return
+			}
+
+			res.json({
+				affectedRows: rows.info.affectedRows,
+				message: "All Vehicle has deleted successfully :[",
+				success: true
+			});
+		});
+		c.end();
+	},
 	getTicketAll: function (req, res) {
 		// c.query("SELECT t1.id,t2.name AS reporter,t3.owner AS violator,t3.vehicle_id,t4.type AS violation_type,t1.detail,t1.incident_date,t1.documentation,t1.status,t1.created,t1.updated FROM data_pelanggaran t1 LEFT JOIN (data_user t2, data_kendaraan t3, violation_list t4) ON (t2.id=t1.reporter_id AND t3.id=t1.violator_id AND t4.id=t1.violation_type)", null, { metadata: true, useArray: true }, function (err, rows) {
 		c.query('SELECT * FROM `data_pelanggaran` ORDER BY `created` DESC', null, { metadata: true, useArray: true }, function (err, rows) {
@@ -1120,8 +1163,39 @@ module.exports = {
 		});
 		c.end();
 	},
+	deactivateTicket: function (req, res) {
+		const waktu = new Date().toISOString();
+		var request = [waktu, req.id];
+		if (request.includes(undefined) || request.includes("")) {
+			res.send({ message: 'Bad Request: Parameters cannot empty.' });
+			return
+		}
+		c.query("UPDATE `data_pelanggaran` SET `status`='9', `updated`=? WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
+			if (err) {
+				res.status(500).send({ message: "Error 500: Internal Server Error" });
+				console.log(err);
+				return
+			}
+
+			if (rows.info.affectedRows < 1) {
+				res.status(404).send({ message: 'Data not found.' });
+			} else {
+				res.json({
+					affectedRows: rows.info.affectedRows,
+					message: "Ticket has deactivate successfully",
+					success: true
+				});
+			}
+		});
+		c.end();
+	},
 	deleteTicket: function (req, res) {
-		c.query("DELETE FROM `data_pelanggaran` WHERE id=?", [req.params.id], { metadata: true, useArray: true }, function (err, rows) {
+		var request = [req.id];
+		if (request.includes(undefined) || request.includes("")) {
+			res.send({ message: 'Bad Request: Parameters cannot empty.' });
+			return
+		}
+		c.query("DELETE FROM `data_pelanggaran` WHERE id=?", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -1130,8 +1204,23 @@ module.exports = {
 
 			res.json({
 				affectedRows: rows.info.affectedRows,
-				err: null,
 				message: "Ticket has deleted successfully",
+				success: true
+			});
+		});
+		c.end();
+	},
+	deleteTicketAll: function (req, res) {
+		c.query("DELETE FROM `data_pelanggaran`", null, { metadata: true, useArray: true }, function (err, rows) {
+			if (err) {
+				res.status(500).send({ message: "Error 500: Internal Server Error" });
+				console.log(err);
+				return
+			}
+
+			res.json({
+				affectedRows: rows.info.affectedRows,
+				message: "All Ticket has deleted successfully :[",
 				success: true
 			});
 		});
@@ -1285,6 +1374,11 @@ module.exports = {
 		c.end();
 	},
 	deletePoint: function (req, res) {
+		var request = [req.uid]
+		if (request.includes(undefined) || request.includes("")) {
+			res.send({ message: 'Bad Request: Parameters cannot empty.' });
+			return
+		}
 		c.query("DELETE FROM `data_point` WHERE user_id=?", [req.uid], { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
@@ -1296,6 +1390,23 @@ module.exports = {
 				affectedRows: rows.info.affectedRows,
 				err: null,
 				message: "Point has deleted successfully",
+				success: true
+			});
+		});
+		c.end();
+	},
+	deletePointAll: function (req, res) {
+		c.query("DELETE FROM `data_point`", null, { metadata: true, useArray: true }, function (err, rows) {
+			if (err) {
+				res.status(500).send({ message: "Error 500: Internal Server Error" });
+				console.log(err);
+				return
+			}
+
+			res.json({
+				affectedRows: rows.info.affectedRows,
+				err: null,
+				message: "All Point has deleted successfully :[",
 				success: true
 			});
 		});
@@ -1496,8 +1607,13 @@ module.exports = {
 		});
 		c.end();
 	},
-	deleteHistory: function (req, res) {
-		c.query("DELETE FROM `data_point` WHERE user_id=?", [req.uid], { metadata: true, useArray: true }, function (err, rows) {
+	deleteTicketHistory: function (req, res) {
+		var request = [req.uid]
+		if (request.includes(undefined) || request.includes("")) {
+			res.send({ message: 'Bad Request: Parameters cannot empty.' });
+			return
+		}
+		c.query("DELETE FROM `history` WHERE ticket_id=?", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -1506,8 +1622,78 @@ module.exports = {
 
 			res.json({
 				affectedRows: rows.info.affectedRows,
-				err: null,
-				message: "History has deleted successfully",
+				message: "Ticket History has deleted successfully",
+				success: true
+			});
+		});
+		c.end();
+	},
+	deleteHistoryAll: function (req, res) {
+		c.query("DELETE FROM `history`", null, { metadata: true, useArray: true }, function (err, rows) {
+			if (err) {
+				res.status(500).send({ message: "Error 500: Internal Server Error" });
+				console.log(err);
+				return
+			}
+
+			res.json({
+				affectedRows: rows.info.affectedRows,
+				message: "All History has deleted successfully :[",
+				success: true
+			});
+		});
+		c.end();
+	},
+	deleteVerificationToken: function (req, res) {
+		c.query("DELETE FROM `verification_token`", null, { metadata: true, useArray: true }, function (err, rows) {
+			if (err) {
+				res.status(500).send({ message: "Error 500: Internal Server Error" });
+				console.log(err);
+				return
+			}
+
+			res.json({
+				affectedRows: rows.info.affectedRows,
+				message: "All Verification Token has deleted successfully :[",
+				success: true
+			});
+		});
+		c.end();
+	},
+	deleteResetPasswordToken: function (req, res) {
+		c.query("DELETE FROM `reset_password`", null, { metadata: true, useArray: true }, function (err, rows) {
+			if (err) {
+				res.status(500).send({ message: "Error 500: Internal Server Error" });
+				console.log(err);
+				return
+			}
+
+			res.json({
+				affectedRows: rows.info.affectedRows,
+				message: "All Reset Password Token has deleted successfully :[",
+				success: true
+			});
+		});
+		c.end();
+	},
+	deleteInactiveToken: function (req, res) {
+		const waktu = new Date().valueOf();
+		c.query("DELETE FROM `reset_password` WHERE `status`=1 OR `status`=3 OR `expired`<?", [waktu], { metadata: true, useArray: true }, function (err, rows) {
+			if (err) {
+				res.status(500).send({ message: "Error 500: Internal Server Error" });
+				console.log(err);
+				return
+			}
+		});
+		c.query("DELETE FROM `verification_token` WHERE `status`=1 OR `status`=3", [waktu], { metadata: true, useArray: true }, function (err, rows) {
+			if (err) {
+				res.status(500).send({ message: "Error 500: Internal Server Error" });
+				console.log(err);
+				return
+			}
+
+			res.json({
+				message: "All Inactive Token has deleted successfully :]",
 				success: true
 			});
 		});
