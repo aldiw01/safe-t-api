@@ -21,7 +21,6 @@ app.use((req, res, next) => {
 	res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
 	next();
 });// Setting up bodyParser to use json and set it to req.body
-app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 // Instantiating the express-jwt middleware
@@ -104,7 +103,7 @@ function fileFilter(req, file, cb) {
 
 const storageAdmin = multer.diskStorage({
 	destination: function (req, file, cb) {
-		cb(null, __dirname + '/uploads/admin/');
+		cb(null, __dirname + '/image/admin/');
 	},
 	filename: function (req, file, cb) {
 		cb(null, new Date().toISOString().replace(/:/g, '-') + '_' + file.originalname);
@@ -113,7 +112,7 @@ const storageAdmin = multer.diskStorage({
 
 const storageUser = multer.diskStorage({
 	destination: function (req, file, cb) {
-		cb(null, __dirname + '/uploads/user/');
+		cb(null, __dirname + '/image/user/');
 	},
 	filename: function (req, file, cb) {
 		cb(null, new Date().toISOString().replace(/:/g, '-') + '_' + file.originalname);
@@ -122,7 +121,7 @@ const storageUser = multer.diskStorage({
 
 const storageVehicle = multer.diskStorage({
 	destination: function (req, file, cb) {
-		cb(null, __dirname + '/uploads/vehicle/');
+		cb(null, __dirname + '/image/vehicle/');
 	},
 	filename: function (req, file, cb) {
 		cb(null, new Date().toISOString().replace(/:/g, '-') + '_' + file.originalname);
@@ -131,7 +130,7 @@ const storageVehicle = multer.diskStorage({
 
 const storageTicket = multer.diskStorage({
 	destination: function (req, file, cb) {
-		cb(null, __dirname + '/uploads/ticket/');
+		cb(null, __dirname + '/image/ticket/');
 	},
 	filename: function (req, file, cb) {
 		cb(null, new Date().toISOString().replace(/:/g, '-') + '_' + file.originalname);
@@ -278,13 +277,23 @@ app.get('/api/user/status/:id', jwtMW, (req, res) => {
 })
 
 app.post('/api/user', (req, res) => {
-	var upload = multer({
-		storage: storageUsersAWS,
-		limits: {
-			fileSize: 1024 * 1024
-		},
-		fileFilter: fileFilter
-	}).single('fileImage');
+	if (process.env.NODE_ENV === "development") {
+		var upload = multer({
+			storage: storageUser,
+			limits: {
+				fileSize: 1024 * 1024
+			},
+			fileFilter: fileFilter
+		}).single('fileImage');
+	} else {
+		var upload = multer({
+			storage: storageUsersAWS,
+			limits: {
+				fileSize: 1024 * 1024
+			},
+			fileFilter: fileFilter
+		}).single('fileImage');
+	}
 	upload(req, res, function (err) {
 		if (err instanceof multer.MulterError) {
 			// A Multer error occurred when uploading.
@@ -307,7 +316,7 @@ app.post('/api/user', (req, res) => {
 
 		const password = crypto.createHmac(HASH_ALGORITHM, SECRET_CIPHER).update(req.body.password).digest(CIPHER_BASE);
 		const token = crypto.randomBytes(16).toString('hex');
-		req.body.captured_id = req.file.key;
+		req.body.captured_id = req.file.key || req.file.filename;
 		req.body.token = token;
 
 		db.newUser(req.body, password, res);
@@ -347,13 +356,23 @@ app.get('/api/admin/status/:id', jwtMW, (req, res) => {
 })
 
 app.post('/api/admin', (req, res) => {
-	var upload = multer({
-		storage: storageAdminsAWS,
-		limits: {
-			fileSize: 1024 * 1024
-		},
-		fileFilter: fileFilter
-	}).single('fileImage');
+	if (process.env.NODE_ENV === "development") {
+		var upload = multer({
+			storage: storageAdmin,
+			limits: {
+				fileSize: 1024 * 1024
+			},
+			fileFilter: fileFilter
+		}).single('fileImage');
+	} else {
+		var upload = multer({
+			storage: storageAdminsAWS,
+			limits: {
+				fileSize: 1024 * 1024
+			},
+			fileFilter: fileFilter
+		}).single('fileImage');
+	}
 	upload(req, res, function (err) {
 		if (err instanceof multer.MulterError) {
 			// A Multer error occurred when uploading.
@@ -375,7 +394,7 @@ app.post('/api/admin', (req, res) => {
 		// password += mykey.final('hex');
 
 		const password = crypto.createHmac(HASH_ALGORITHM, SECRET_CIPHER).update(req.body.password).digest(CIPHER_BASE);
-		req.body.captured_id = req.file.key;
+		req.body.captured_id = req.file.key || req.file.filename;
 
 		db.newAdmin(req.body, password, res);
 	})
@@ -444,13 +463,23 @@ app.get('/api/ticket/user/:id', (req, res) => {
 })
 
 app.post('/api/ticket', (req, res) => {
-	var upload = multer({
-		storage: storagetTicketsAWS,
-		limits: {
-			fileSize: 1024 * 1024
-		},
-		fileFilter: fileFilter
-	}).single('fileImage');
+	if (process.env.NODE_ENV === "development") {
+		var upload = multer({
+			storage: storageTicket,
+			limits: {
+				fileSize: 1024 * 1024
+			},
+			fileFilter: fileFilter
+		}).single('fileImage');
+	} else {
+		var upload = multer({
+			storage: storagetTicketsAWS,
+			limits: {
+				fileSize: 1024 * 1024
+			},
+			fileFilter: fileFilter
+		}).single('fileImage');
+	}
 	upload(req, res, function (err) {
 		if (err instanceof multer.MulterError) {
 			// A Multer error occurred when uploading.
@@ -467,7 +496,7 @@ app.post('/api/ticket', (req, res) => {
 		// Everything went fine.
 		console.log('Upload success.');
 
-		req.body.documentation = req.file.key;
+		req.body.documentation = req.file.key || req.file.filename;
 
 		db.newTicket(req.body, res);
 	})
@@ -578,65 +607,69 @@ app.delete('/api/history/all/ever', jwtMW, (req, res) => {
 /////////////////////////////////////////////////////////////////////////////////////////////
 // API Get Image
 
-app.get('/api/image/admin/:imageID', (req, res) => {
-	var params = {
-		Bucket: process.env.APP_AWS_BUCKET + '/admins',
-		Key: req.params.imageID
-	};
-	s3.getObject(params, function (err, data) {
-		if (err) {
-			res.send({
-				message: err.message,
-				statusCode: err.statusCode
-			});
-			console.log(err);
-			return
-		}
-		res.writeHead(200, { 'Content-Type': data.ContentType });
-		res.write(data.Body, 'binary');
-		res.end(null, 'binary');
-	});
-})
+if (process.env.NODE_ENV === "development") {
+	app.use('/api/image', express.static(path.join(__dirname, 'image')));
+} else {
+	app.get('/api/image/admin/:imageID', (req, res) => {
+		var params = {
+			Bucket: process.env.APP_AWS_BUCKET + '/admins',
+			Key: req.params.imageID
+		};
+		s3.getObject(params, function (err, data) {
+			if (err) {
+				res.send({
+					message: err.message,
+					statusCode: err.statusCode
+				});
+				console.log(err);
+				return
+			}
+			res.writeHead(200, { 'Content-Type': data.ContentType });
+			res.write(data.Body, 'binary');
+			res.end(null, 'binary');
+		});
+	})
 
-app.get('/api/image/ticket/:imageID', (req, res) => {
-	var params = {
-		Bucket: process.env.APP_AWS_BUCKET + '/tickets',
-		Key: req.params.imageID
-	};
-	s3.getObject(params, function (err, data) {
-		if (err) {
-			res.send({
-				message: err.message,
-				statusCode: err.statusCode
-			});
-			console.log(err);
-			return
-		}
-		res.writeHead(200, { 'Content-Type': data.ContentType });
-		res.write(data.Body, 'binary');
-		res.end(null, 'binary');
-	});
-})
+	app.get('/api/image/ticket/:imageID', (req, res) => {
+		var params = {
+			Bucket: process.env.APP_AWS_BUCKET + '/tickets',
+			Key: req.params.imageID
+		};
+		s3.getObject(params, function (err, data) {
+			if (err) {
+				res.send({
+					message: err.message,
+					statusCode: err.statusCode
+				});
+				console.log(err);
+				return
+			}
+			res.writeHead(200, { 'Content-Type': data.ContentType });
+			res.write(data.Body, 'binary');
+			res.end(null, 'binary');
+		});
+	})
 
-app.get('/api/image/user/:imageID', (req, res) => {
-	var params = {
-		Bucket: process.env.APP_AWS_BUCKET + '/users',
-		Key: req.params.imageID
-	};
-	s3.getObject(params, function (err, data) {
-		if (err) {
-			res.send({
-				message: err.message,
-				statusCode: err.statusCode
-			});
-			console.log(err);
-			return
-		}
-		res.writeHead(200, { 'Content-Type': data.ContentType });
-		res.write(data.Body, 'binary');
-		res.end(null, 'binary');
-	});
-})
+	app.get('/api/image/user/:imageID', (req, res) => {
+		var params = {
+			Bucket: process.env.APP_AWS_BUCKET + '/users',
+			Key: req.params.imageID
+		};
+		s3.getObject(params, function (err, data) {
+			if (err) {
+				res.send({
+					message: err.message,
+					statusCode: err.statusCode
+				});
+				console.log(err);
+				return
+			}
+			res.writeHead(200, { 'Content-Type': data.ContentType });
+			res.write(data.Body, 'binary');
+			res.end(null, 'binary');
+		});
+	})
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 // Forgot and Reset Password

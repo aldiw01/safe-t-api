@@ -1089,6 +1089,28 @@ module.exports = {
 				return
 			}
 
+			// // Write ticket history
+			// var request = [
+			// 	rows.info.insertId,
+			// 	req.reporter_id,
+			// 	"0",
+			// 	"telah mengajukan tiket",
+			// 	"",
+			// 	waktu,
+			// 	waktu
+			// ]
+			// if (request.includes(undefined)) {
+			// 	res.send({ message: 'Bad Request: Parameters cannot empty.' });
+			// 	return
+			// }
+			// c.query("INSERT INTO `history` (`ticket_id`, `from_id`, `to_id`, `info`, `message`, `status`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, 0, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
+			// 	if (err) {
+			// 		res.status(500).send({ message: "Error 500: Internal Server Error" });
+			// 		console.log(err);
+			// 		return
+			// 	}
+			// });
+
 			res.json({
 				affectedRows: rows.info.affectedRows,
 				err: null,
@@ -1151,6 +1173,7 @@ module.exports = {
 							err: null,
 							message: "Ticket closed successfully"
 						});
+						return
 					});
 				});
 			} else {
