@@ -58,19 +58,12 @@ $ yarn start
 ## Status Info
 Info about Status ID, any configuration may change in future update.
 
-#### Admin privilege_id
-```
-0. Not verified
-1. Active/Staff
-2. Super Admin
-9. Deactivated
-```
-
 #### User status
 ```
 0. Not verified
 1. Pending / Not Validated
-2. Active
+2. Active/Staff (Admin)
+3. Super Admin
 9. Deactivated
 ```
 

@@ -13,7 +13,7 @@ module.exports = {
 
 	cekLoginAdmin: function (email, pass, callback) {
 		var req = [email, pass];
-		c.query("SELECT * FROM data_admin WHERE email=? AND password=?", req, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("SELECT * FROM `data_user` WHERE `email`=? AND `password`=? AND id LIKE 'A%'", req, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -25,13 +25,16 @@ module.exports = {
 				rows.forEach(function (items) {
 					data.push({
 						id: items[0],
-						name: items[1],
+						name: items[2],
 						email: items[3],
-						citizen_id: items[4],
-						captured_id: items[5],
-						privilege_id: items[6],
-						created: items[7],
-						updated: items[8]
+						phone: items[4],
+						citizen_id: items[5],
+						captured_id: items[6],
+						gender: items[7],
+						address: items[8],
+						status: items[9],
+						created: items[10],
+						updated: items[11]
 					});
 				});
 			}
@@ -41,7 +44,7 @@ module.exports = {
 	},
 	cekLoginUser: function (email, pass, callback) {
 		var req = [email, pass];
-		c.query("SELECT * FROM data_user WHERE email=? AND password=?", req, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("SELECT * FROM data_user WHERE email=? AND password=? AND id LIKE 'U%'", req, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -72,7 +75,7 @@ module.exports = {
 	},
 	verifyToken: function (req, res) {
 		const waktu = new Date().toISOString();
-		c.query("SELECT t1.email, t2.id FROM `verification_token` t1 INNER JOIN `data_user` t2 ON (t1.token=? AND t1.status=0 AND t1.email=t2.email)", [req.token], { metadata: true, useArray: true }, function (err, rows) {
+		c.query("SELECT `email`, `status` FROM `verification_token` WHERE `token`=? AND (`status`=0 OR `status`=2)", [req.token], { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -81,26 +84,49 @@ module.exports = {
 
 			if (rows.info.numRows !== '0') {
 				rows.forEach(function (items) {
-					c.query("UPDATE `verification_token` SET `status`='1', `updated`=? WHERE `email`=?", [waktu, items[0]], { metadata: true, useArray: true }, function (err, rows) {
-						if (err) {
-							res.status(500).send({ message: "Error 500: Internal Server Error" });
-							console.log(err);
-							return
-						}
-					});
-					c.query("UPDATE `data_user` SET status='1', `updated`=? WHERE `email`=?", [waktu, items[0]], { metadata: true, useArray: true }, function (err, rows) {
-						if (err) {
-							res.status(500).send({ message: "Error 500: Internal Server Error" });
-							console.log(err);
-							return
-						}
-
-						res.json({
-							success: true,
-							err: null,
-							message: "Thank you for verifying your email. Please wait until our staff validate your data."
+					if (items[1] === '2') {
+						c.query("UPDATE `verification_token` SET `status`='3', `updated`=? WHERE `token`=?", [waktu, req.token], { metadata: true, useArray: true }, function (err, rows) {
+							if (err) {
+								res.status(500).send({ message: "Error 500: Internal Server Error" });
+								console.log(err);
+								return
+							}
 						});
-					});
+						c.query("UPDATE `data_user` SET status='1', `updated`=? WHERE `email`=? AND `id` LIKE 'A%'", [waktu, items[0]], { metadata: true, useArray: true }, function (err, rows) {
+							if (err) {
+								res.status(500).send({ message: "Error 500: Internal Server Error" });
+								console.log(err);
+								return
+							}
+
+							res.json({
+								success: true,
+								err: null,
+								message: "Thank you for verifying your email. Please wait until our staff validate your data."
+							});
+						});
+					} else {
+						c.query("UPDATE `verification_token` SET `status`='1', `updated`=? WHERE `token`=?", [waktu, req.token], { metadata: true, useArray: true }, function (err, rows) {
+							if (err) {
+								res.status(500).send({ message: "Error 500: Internal Server Error" });
+								console.log(err);
+								return
+							}
+						});
+						c.query("UPDATE `data_user` SET status='1', `updated`=? WHERE `email`=? AND `id` LIKE 'U%'", [waktu, items[0]], { metadata: true, useArray: true }, function (err, rows) {
+							if (err) {
+								res.status(500).send({ message: "Error 500: Internal Server Error" });
+								console.log(err);
+								return
+							}
+
+							res.json({
+								success: true,
+								err: null,
+								message: "Thank you for verifying your email. Please wait until our staff validate your data."
+							});
+						});
+					}
 				});
 			} else {
 				res.json({
@@ -126,7 +152,7 @@ module.exports = {
 				return
 			}
 		});
-		c.query("UPDATE `data_user` SET `status`='2', `updated`=? WHERE `id`=?", [waktu, req.id], { metadata: true, useArray: true }, function (err, rows) {
+		c.query("UPDATE `data_user` SET `status`='2', `updated`=? WHERE `id`=? AND `id` LIKE 'U%'", [waktu, req.id], { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -174,7 +200,7 @@ module.exports = {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("SELECT `name` FROM `data_user` WHERE `email`=?", [req.email], { metadata: true, useArray: true }, function (err, rows) {
+		c.query("SELECT `name` FROM `data_user` WHERE `email`=? AND `id` LIKE 'U%'", [req.email], { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -214,7 +240,7 @@ module.exports = {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("SELECT `name` FROM `data_admin` WHERE `email`=?", [req.email], { metadata: true, useArray: true }, function (err, rows) {
+		c.query("SELECT `name` FROM `data_user` WHERE `email`=? AND `id` LIKE 'A%'", [req.email], { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -274,7 +300,7 @@ module.exports = {
 	},
 	forgotPassword_editPassword: function (req, password, res) {
 		const waktu = new Date().toISOString();
-		c.query("UPDATE `data_user` SET `password`=?, `updated`=? WHERE `email`=?", [password, waktu, req.email], { metadata: true, useArray: true }, function (err, rows) {
+		c.query("UPDATE `data_user` SET `password`=?, `updated`=? WHERE `email`=? AND `id` LIKE 'U%'", [password, waktu, req.email], { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -298,7 +324,7 @@ module.exports = {
 	},
 	forgotPassword_Admin_editPassword: function (req, password, res) {
 		const waktu = new Date().toISOString();
-		c.query("UPDATE `data_admin` SET `password`=?, `updated`=? WHERE `email`=?", [password, waktu, req.email], { metadata: true, useArray: true }, function (err, rows) {
+		c.query("UPDATE `data_user` SET `password`=?, `updated`=? WHERE `email`=? AND `id` LIKE 'A%'", [password, waktu, req.email], { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -321,7 +347,7 @@ module.exports = {
 		c.end();
 	},
 	checkAdminRegistered: function (req, res) {
-		c.query("SELECT * FROM data_admin WHERE email=?", [req.email], { metadata: true, useArray: true }, function (err, rows) {
+		c.query("SELECT * FROM `data_user` WHERE `email`=? AND `id` LIKE 'A%'", [req.email], { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -345,7 +371,7 @@ module.exports = {
 		c.end();
 	},
 	checkUserRegistered: function (req, res) {
-		c.query("SELECT * FROM data_user WHERE email=?", [req.email], { metadata: true, useArray: true }, function (err, rows) {
+		c.query("SELECT * FROM `data_user` WHERE `email`=? AND `id` LIKE 'U%'", [req.email], { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -369,7 +395,7 @@ module.exports = {
 		c.end();
 	},
 	getUserAll: function (req, res) {
-		c.query('SELECT * FROM `data_user` ORDER BY `created` DESC', null, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("SELECT * FROM `data_user` AND `id` LIKE 'U%' ORDER BY `created` DESC", null, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -401,7 +427,7 @@ module.exports = {
 		c.end();
 	},
 	getUserStatus: function (req, res) {
-		c.query("SELECT * FROM `data_user` WHERE status=? ORDER BY `created` DESC", [req.id], { metadata: true, useArray: true }, function (err, rows) {
+		c.query("SELECT * FROM `data_user` WHERE status=? AND `id` LIKE 'U%' ORDER BY `created` DESC", [req.id], { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -433,7 +459,7 @@ module.exports = {
 		c.end();
 	},
 	getUser: function (req, res) {
-		c.query("SELECT * FROM `data_user` WHERE id=?", [req.id], { metadata: true, useArray: true }, function (err, rows) {
+		c.query("SELECT * FROM `data_user` WHERE id=? `id` LIKE 'U%'", [req.id], { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -466,7 +492,7 @@ module.exports = {
 	},
 	newUser: function (req, password, res) {
 		const waktu = new Date().toISOString();
-		var request = [password, req.name, req.email, req.phone, req.citizen_id, req.captured_id, req.gender, req.address, waktu, waktu];
+		var request = ['U' + new Date(waktu).valueOf().toString(32).toUpperCase(), password, req.name, req.email, req.phone, req.citizen_id, req.captured_id, req.gender, req.address, waktu, waktu];
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
@@ -480,7 +506,7 @@ module.exports = {
 
 			mailService.sendVerification(req.email, req.name, req.token);
 		});
-		c.query("INSERT INTO `data_user`(`password`, `name`, `email`, `phone`, `citizen_id`, `captured_id`, `gender`, `address`, `status`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '0', ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("INSERT INTO `data_user`(`id`, `password`, `name`, `email`, `phone`, `citizen_id`, `captured_id`, `gender`, `address`, `status`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '0', ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -503,7 +529,7 @@ module.exports = {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("UPDATE `data_user` SET `name`=?,`email`=?,`phone`=?,`citizen_id`=?,`captured_id`=?,`gender`=?,`address`=?, `updated`=? WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("UPDATE `data_user` SET `name`=?,`email`=?,`phone`=?,`citizen_id`=?,`captured_id`=?,`gender`=?,`address`=?, `updated`=? WHERE `id`=? AND `id` LIKE 'U%'", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -526,7 +552,7 @@ module.exports = {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("UPDATE `data_user` SET `status`='9', `updated`=? WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("UPDATE `data_user` SET `status`='9', `updated`=? WHERE `id`=? AND `id` LIKE 'U%'", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -559,7 +585,7 @@ module.exports = {
 				return
 			}
 		});
-		c.query("DELETE FROM `data_user` WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("DELETE FROM `data_user` WHERE `id`=? AND `id` LIKE 'U%'", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -587,7 +613,7 @@ module.exports = {
 				return
 			}
 		});
-		c.query("DELETE FROM `data_user`", null, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("DELETE FROM `data_user` WHERE `id` LIKE 'U%'", null, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -607,7 +633,7 @@ module.exports = {
 		c.end();
 	},
 	getAdminAll: function (req, res) {
-		c.query("SELECT * FROM `data_admin` ORDER BY `id`", null, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("SELECT * FROM `data_user` WHERE `id` LIKE 'A%' ORDER BY `id`", null, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -618,13 +644,16 @@ module.exports = {
 			rows.forEach(function (items) {
 				data.push({
 					id: items[0],
-					name: items[1],
+					name: items[2],
 					email: items[3],
-					citizen_id: items[4],
-					captured_id: items[5],
-					privilege_id: items[6],
-					created: items[7],
-					updated: items[8]
+					phone: items[4],
+					citizen_id: items[5],
+					captured_id: items[6],
+					gender: items[7],
+					address: items[8],
+					status: items[9],
+					created: items[10],
+					updated: items[11]
 				});
 			});
 			if (data.length < 1) {
@@ -636,7 +665,7 @@ module.exports = {
 		c.end();
 	},
 	getAdmin: function (req, res) {
-		c.query("SELECT * FROM `data_admin` WHERE `id`=?", [req.id], { metadata: true, useArray: true }, function (err, rows) {
+		c.query("SELECT * FROM `data_user` WHERE `id`=? AND `id` LIKE 'A%'", [req.id], { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -647,13 +676,16 @@ module.exports = {
 			rows.forEach(function (items) {
 				data.push({
 					id: items[0],
-					name: items[1],
+					name: items[2],
 					email: items[3],
-					citizen_id: items[4],
-					captured_id: items[5],
-					privilege_id: items[6],
-					created: items[7],
-					updated: items[8]
+					phone: items[4],
+					citizen_id: items[5],
+					captured_id: items[6],
+					gender: items[7],
+					address: items[8],
+					status: items[9],
+					created: items[10],
+					updated: items[11]
 				});
 			});
 			if (data.length < 1) {
@@ -665,7 +697,7 @@ module.exports = {
 		c.end();
 	},
 	getAdminStatus: function (req, res) {
-		c.query("SELECT * FROM `data_admin` WHERE `privilege_id`=?", [req.id], { metadata: true, useArray: true }, function (err, rows) {
+		c.query("SELECT * FROM `data_user` WHERE `status`=? AND `id` LIKE 'A%'", [req.id], { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -676,13 +708,16 @@ module.exports = {
 			rows.forEach(function (items) {
 				data.push({
 					id: items[0],
-					name: items[1],
+					name: items[2],
 					email: items[3],
-					citizen_id: items[4],
-					captured_id: items[5],
-					privilege_id: items[6],
-					created: items[7],
-					updated: items[8]
+					phone: items[4],
+					citizen_id: items[5],
+					captured_id: items[6],
+					gender: items[7],
+					address: items[8],
+					status: items[9],
+					created: items[10],
+					updated: items[11]
 				});
 			});
 			if (data.length < 1) {
@@ -695,12 +730,21 @@ module.exports = {
 	},
 	newAdmin: function (req, password, res) {
 		const waktu = new Date().toISOString();
-		var request = [req.name, password, req.email, req.citizen_id, req.captured_id, waktu, waktu]
+		var request = ['A' + new Date(waktu).valueOf().toString(32).toUpperCase(), password, req.name, req.email, req.phone, req.citizen_id, req.captured_id, req.gender, req.address, waktu, waktu];
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("INSERT INTO `data_admin` (`name`, `password`, `email`, `citizen_id`, `captured_id`, `privilege_id`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, 0, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("INSERT INTO `verification_token`(`email`, `token`, `status`, `created`, `updated`) VALUES (?, ?, '2', ?, ?)", [req.email, req.token, waktu, waktu], { metadata: true, useArray: true }, function (err, rows) {
+			if (err) {
+				res.status(500).send({ message: "Error 500: Internal Server Error" });
+				console.log(err);
+				return
+			}
+
+			mailService.sendVerification(req.email, req.name, req.token);
+		});
+		c.query("INSERT INTO `data_user` (`id`, `password`, `name`, `email`, `phone`, `citizen_id`, `captured_id`, `gender`, `address`, `status`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '0', ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -709,7 +753,6 @@ module.exports = {
 
 			res.json({
 				affectedRows: rows.info.affectedRows,
-				err: null,
 				message: "Admin has registered successfully",
 				success: true
 			});
@@ -723,7 +766,7 @@ module.exports = {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("UPDATE `data_admin` SET `status`='9', `updated`=? WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("UPDATE `data_user` SET `status`='9', `updated`=? WHERE `id`=? AND `id` LIKE 'A%'", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -749,7 +792,7 @@ module.exports = {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("DELETE FROM `data_admin` WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("DELETE FROM `data_user` WHERE `id`=? AND `id` LIKE 'A%'", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -782,13 +825,12 @@ module.exports = {
 				data.push({
 					id: items[0],
 					owner: items[1],
-					vehicle_id: items[2],
-					brand: items[3],
-					type: items[4],
-					build_year: items[5],
-					color: items[6],
-					created: items[7],
-					updated: items[8]
+					brand: items[2],
+					type: items[3],
+					build_year: items[4],
+					color: items[5],
+					created: items[6],
+					updated: items[7]
 				});
 			});
 			if (data.length < 1) {
@@ -813,44 +855,12 @@ module.exports = {
 				data.push({
 					id: items[0],
 					owner: items[1],
-					vehicle_id: items[2],
-					brand: items[3],
-					type: items[4],
-					build_year: items[5],
-					color: items[6],
-					created: items[7],
-					updated: items[8]
-				});
-			});
-			if (data.length < 1) {
-				res.status(404).send('Data not found.');
-			} else {
-				res.json(data);
-			}
-		});
-		c.end();
-	},
-	getVehiclePlate: function (req, res) {
-		var request = [req.id];
-		c.query("SELECT * FROM `data_kendaraan` WHERE `vehicle_id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
-			if (err) {
-				res.status(500).send({ message: "Error 500: Internal Server Error" });
-				console.log(err);
-				return
-			}
-
-			var data = [];
-			rows.forEach(function (items) {
-				data.push({
-					id: items[0],
-					owner: items[1],
-					vehicle_id: items[2],
-					brand: items[3],
-					type: items[4],
-					build_year: items[5],
-					color: items[6],
-					created: items[7],
-					updated: items[8]
+					brand: items[2],
+					type: items[3],
+					build_year: items[4],
+					color: items[5],
+					created: items[6],
+					updated: items[7]
 				});
 			});
 			if (data.length < 1) {
@@ -863,21 +873,23 @@ module.exports = {
 	},
 	newVehicle: function (req, res) {
 		const waktu = new Date().toISOString();
-		var request = [req.body.owner, req.body.vehicle_id, req.body.brand, req.body.type, req.body.build_year, req.body.color, waktu, waktu]
+		var request = [req.body.vehicle_id, req.body.owner, req.body.brand, req.body.type, req.body.build_year, req.body.color, waktu, waktu]
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("INSERT INTO `data_kendaraan` (`owner`, `vehicle_id`, `brand`, `type`, `build_year`, `color`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("INSERT INTO `data_kendaraan` (`id`, `owner`, `brand`, `type`, `build_year`, `color`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
-				res.status(500).send({ message: "Error 500: Internal Server Error" });
+				res.send({
+					message: err.message,
+					err: err
+				});
 				console.log(err);
 				return
 			}
 
 			res.json({
 				affectedRows: rows.info.affectedRows,
-				err: null,
 				message: "Vehicle has recorded successfully",
 				success: true
 			});
@@ -886,12 +898,12 @@ module.exports = {
 	},
 	updateVehicle: function (req, res) {
 		const waktu = new Date().toISOString();
-		var request = [req.body.owner, req.body.vehicle_id, req.body.brand, req.body.type, req.body.build_year, req.body.color, waktu, req.params.id]
+		var request = [req.body.owner, req.body.brand, req.body.type, req.body.build_year, req.body.color, waktu, req.params.id]
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("UPDATE `data_kendaraan` SET `owner`=?, `vehicle_id`=?, `brand`=?, `type`=?, `build_year`=?, `color`=?, `updated`=? WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("UPDATE `data_kendaraan` SET `owner`=?, `brand`=?, `type`=?, `build_year`=?, `color`=?, `updated`=? WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -900,7 +912,6 @@ module.exports = {
 
 			res.json({
 				affectedRows: rows.info.affectedRows,
-				err: null,
 				message: "Vehicle has updated successfully",
 				success: true
 			});
@@ -917,7 +928,6 @@ module.exports = {
 
 			res.json({
 				affectedRows: rows.info.affectedRows,
-				err: null,
 				message: "Vehicle has deleted successfully",
 				success: true
 			});
@@ -941,7 +951,7 @@ module.exports = {
 		c.end();
 	},
 	getTicketAll: function (req, res) {
-		// c.query("SELECT t1.id,t2.name AS reporter,t3.owner AS violator,t3.vehicle_id,t4.type AS violation_type,t1.detail,t1.incident_date,t1.documentation,t1.status,t1.created,t1.updated FROM data_pelanggaran t1 LEFT JOIN (data_user t2, data_kendaraan t3, violation_list t4) ON (t2.id=t1.reporter_id AND t3.id=t1.violator_id AND t4.id=t1.violation_type)", null, { metadata: true, useArray: true }, function (err, rows) {
+		// c.query("SELECT t1.id,t2.name AS reporter,t3.owner AS violator,t3.vehicle_id,t4.type AS violation_type,t1.detail,t1.incident_date,t1.documentation,t1.status,t1.created,t1.updated FROM data_pelanggaran t1 LEFT JOIN (data_user t2, data_kendaraan t3, violation_list t4) ON (t2.id=t1.reporter_id AND t3.id=t1.vehicle_id AND t4.id=t1.violation_type)", null, { metadata: true, useArray: true }, function (err, rows) {
 		c.query('SELECT * FROM `data_pelanggaran` ORDER BY `created` DESC', null, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
@@ -954,15 +964,14 @@ module.exports = {
 				data.push({
 					id: items[0],
 					reporter_id: items[1],
-					violator_id: items[2],
-					vehicle_id: items[3],
-					violation_type: items[4],
-					detail: items[5],
-					incident_date: items[6],
-					documentation: items[7],
-					status: items[8],
-					created: items[9],
-					updated: items[10]
+					vehicle_id: items[2],
+					violation_type: items[3],
+					detail: items[4],
+					incident_date: items[5],
+					documentation: items[6],
+					status: items[7],
+					created: items[8],
+					updated: items[9]
 				});
 			});
 			if (data.length < 1) {
@@ -974,7 +983,7 @@ module.exports = {
 		c.end();
 	},
 	getTicket: function (req, res) {
-		// c.query("SELECT t1.id,t2.name AS reporter,t3.owner AS violator,t3.vehicle_id,t4.type AS violation_type,t1.detail,t1.incident_date,t1.documentation,t1.status,t1.created,t1.updated FROM data_pelanggaran t1 LEFT JOIN (data_user t2, data_kendaraan t3, violation_list t4) ON (t2.id=t1.reporter_id AND t3.id=t1.violator_id AND t4.id=t1.violation_type) WHERE t1.id=?", [req.id], { metadata: true, useArray: true }, function (err, rows) {
+		// c.query("SELECT t1.id,t2.name AS reporter,t3.owner AS violator,t3.vehicle_id,t4.type AS violation_type,t1.detail,t1.incident_date,t1.documentation,t1.status,t1.created,t1.updated FROM data_pelanggaran t1 LEFT JOIN (data_user t2, data_kendaraan t3, violation_list t4) ON (t2.id=t1.reporter_id AND t3.id=t1.vehicle_id AND t4.id=t1.violation_type) WHERE t1.id=?", [req.id], { metadata: true, useArray: true }, function (err, rows) {
 		c.query("SELECT * FROM `data_pelanggaran` WHERE `id`=?", [req.id], { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
@@ -987,15 +996,14 @@ module.exports = {
 				data.push({
 					id: items[0],
 					reporter_id: items[1],
-					violator_id: items[2],
-					vehicle_id: items[3],
-					violation_type: items[4],
-					detail: items[5],
-					incident_date: items[6],
-					documentation: items[7],
-					status: items[8],
-					created: items[9],
-					updated: items[10]
+					vehicle_id: items[2],
+					violation_type: items[3],
+					detail: items[4],
+					incident_date: items[5],
+					documentation: items[6],
+					status: items[7],
+					created: items[8],
+					updated: items[9]
 				});
 			});
 			if (data.length < 1) {
@@ -1024,15 +1032,14 @@ module.exports = {
 				data.push({
 					id: items[0],
 					reporter_id: items[1],
-					violator_id: items[2],
-					vehicle_id: items[3],
-					violation_type: items[4],
-					detail: items[5],
-					incident_date: items[6],
-					documentation: items[7],
-					status: items[8],
-					created: items[9],
-					updated: items[10]
+					vehicle_id: items[2],
+					violation_type: items[3],
+					detail: items[4],
+					incident_date: items[5],
+					documentation: items[6],
+					status: items[7],
+					created: items[8],
+					updated: items[9]
 				});
 			});
 			if (data.length < 1) {
@@ -1056,15 +1063,14 @@ module.exports = {
 				data.push({
 					id: items[0],
 					reporter_id: items[1],
-					violator_id: items[2],
-					vehicle_id: items[3],
-					violation_type: items[4],
-					detail: items[5],
-					incident_date: items[6],
-					documentation: items[7],
-					status: items[8],
-					created: items[9],
-					updated: items[10]
+					vehicle_id: items[2],
+					violation_type: items[3],
+					detail: items[4],
+					incident_date: items[5],
+					documentation: items[6],
+					status: items[7],
+					created: items[8],
+					updated: items[9]
 				});
 			});
 			if (data.length < 1) {
@@ -1077,43 +1083,43 @@ module.exports = {
 	},
 	newTicket: function (req, res) {
 		const waktu = new Date().toISOString();
-		var request = [req.reporter_id, req.violator_id, req.vehicle_id, req.violation_type, req.detail, req.incident_date, req.documentation, waktu, waktu]
+		const ticket_id = 'T' + new Date(waktu).valueOf().toString(32).toUpperCase();
+		var request = [ticket_id, req.reporter_id, req.vehicle_id, req.violation_type, req.detail, req.incident_date, req.documentation, waktu, waktu]
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("INSERT INTO `data_pelanggaran` (`reporter_id`, `violator_id`, `vehicle_id`, `violation_type`, `detail`, `incident_date`, `documentation`, `status`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("INSERT INTO `data_pelanggaran` (`id`, `reporter_id`, `vehicle_id`, `violation_type`, `detail`, `incident_date`, `documentation`, `status`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
 				return
 			}
 
-			// // Write ticket history
-			// var request = [
-			// 	rows.info.insertId,
-			// 	req.reporter_id,
-			// 	"0",
-			// 	"telah mengajukan tiket",
-			// 	"",
-			// 	waktu,
-			// 	waktu
-			// ]
-			// if (request.includes(undefined)) {
-			// 	res.send({ message: 'Bad Request: Parameters cannot empty.' });
-			// 	return
-			// }
-			// c.query("INSERT INTO `history` (`ticket_id`, `from_id`, `to_id`, `info`, `message`, `status`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, 0, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
-			// 	if (err) {
-			// 		res.status(500).send({ message: "Error 500: Internal Server Error" });
-			// 		console.log(err);
-			// 		return
-			// 	}
-			// });
+			// Write ticket history
+			var request = [
+				ticket_id,
+				req.reporter_id,
+				"A",
+				"telah mengajukan tiket",
+				"",
+				waktu,
+				waktu
+			]
+			if (request.includes(undefined)) {
+				res.send({ message: 'Bad Request: Parameters cannot empty.' });
+				return
+			}
+			c.query("INSERT INTO `history` (`ticket_id`, `from_id`, `to_id`, `info`, `message`, `status`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, 0, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
+				if (err) {
+					res.status(500).send({ message: "Error 500: Internal Server Error" });
+					console.log(err);
+					return
+				}
+			});
 
 			res.json({
 				affectedRows: rows.info.affectedRows,
-				err: null,
 				message: "Ticket has recorded successfully",
 				success: true
 			});
@@ -1122,12 +1128,12 @@ module.exports = {
 	},
 	updateTicket: function (req, res) {
 		const waktu = new Date().toISOString();
-		var request = [req.body.reporter_id, req.body.violator_id, req.body.vehicle_id, req.body.violation_type, req.body.detail, req.body.incident_date, waktu, req.params.id]
+		var request = [req.body.reporter_id, req.body.vehicle_id, req.body.violation_type, req.body.detail, req.body.incident_date, waktu, req.params.id]
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("UPDATE `data_pelanggaran` SET `reporter_id`=?, `violator_id`=?, `vehicle_id`=?, `violation_type`=?, `detail`=?, `incident_date`=?, `updated`=? WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("UPDATE `data_pelanggaran` SET `reporter_id`=?, `vehicle_id`=?, `violation_type`=?, `detail`=?, `incident_date`=?, `updated`=? WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -1256,7 +1262,7 @@ module.exports = {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("UPDATE `data_admin` SET `privilege_id`=?, `updated`=? WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("UPDATE `data_user` SET `status`=?, `updated`=? WHERE `id`=? AND `id` LIKE 'A%'", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -1265,8 +1271,8 @@ module.exports = {
 
 			res.json({
 				affectedRows: rows.info.affectedRows,
-				err: null,
 				message: "Privilege has updated successfully",
+				privilege_id: req.body.privilege_id,
 				success: true
 			});
 		});
@@ -1556,7 +1562,7 @@ module.exports = {
 		c.end();
 	},
 	getTicketHistory: function (req, res) {
-		c.query("SELECT t1.id, t1.ticket_id, t2.name, t1.info, t1.message, t1.status, t1.created, t1.updated FROM `history` t1 INNER JOIN `data_admin` t2 ON (t1.from_id=t2.id AND ticket_id=?)", [req.id], { metadata: true, useArray: true }, function (err, rows) {
+		c.query("SELECT t1.id, t1.ticket_id, t2.name, t1.info, t1.message, t1.status, t1.created, t1.updated FROM `history` t1 INNER JOIN `data_user` t2 ON (t1.from_id=t2.id AND ticket_id=?) ORDER BY t1.created DESC", [req.id], { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);

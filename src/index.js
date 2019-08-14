@@ -160,20 +160,19 @@ app.post('/api/loginAdmin', (req, res) => {
 	const password = crypto.createHmac(HASH_ALGORITHM, SECRET_CIPHER).update(req.body.password).digest(CIPHER_BASE);
 	console.log(password);
 
-	// var mykey = crypto.createCipher('aes-128-cbc', SECRET_CIPHER);
-	// var password = mykey.update(req.body.password, 'utf8', 'hex')
-	// password += mykey.final('hex');
-
 	db.cekLoginAdmin(email, password, function (err, data) {
-		if (data.length === 1) {
+		if (data.length === 1 && (data[0].status === "2" || data[0].status === "3")) {
 			//If all credentials are correct do this
 			let token = jwt.sign({
 				id: data[0].id,
 				name: data[0].name,
 				email: data[0].email,
+				phone: data[0].phone,
 				citizen_id: data[0].citizen_id,
 				captured_id: data[0].captured_id,
-				previledge_id: data[0].previledge_id,
+				gender: data[0].gender,
+				address: data[0].address,
+				status: data[0].status,
 				created: data[0].created,
 				updated: data[0].updated,
 				user_type: "Admin"
@@ -182,6 +181,20 @@ app.post('/api/loginAdmin', (req, res) => {
 				success: true,
 				err: null,
 				token
+			});
+		}
+		else if (data.length === 1 && data[0].status === "1") {
+			res.json({
+				success: false,
+				token: null,
+				err: 'User is not validated by Admin'
+			});
+		}
+		else if (data.length === 1 && data[0].status === "0") {
+			res.json({
+				success: false,
+				token: null,
+				err: 'Email is not verified'
 			});
 		}
 		else {
@@ -199,16 +212,6 @@ app.post('/api/loginUser', (req, res) => {
 	console.log("loginUser")
 
 	const password = crypto.createHmac(HASH_ALGORITHM, SECRET_CIPHER).update(req.body.password).digest(CIPHER_BASE);
-
-	// const cipher = crypto.createCipheriv(ALGORITHM, CIPHER_KEY, CIPHER_IV);
-	// let password = cipher.update(req.body.password, 'utf8', 'hex');
-	// password += cipher.final('hex');
-
-	// var mykey = crypto.createCipher('aes-128-cbc', SECRET_CIPHER);
-	// var password = mykey.update(req.body.password, 'utf8', 'hex')
-	// password += mykey.final('hex');
-
-	console.log(password);
 
 	db.cekLoginUser(email, password, function (err, data) {
 		if (data.length === 1 && data[0].status === "2") {
@@ -394,7 +397,9 @@ app.post('/api/admin', (req, res) => {
 		// password += mykey.final('hex');
 
 		const password = crypto.createHmac(HASH_ALGORITHM, SECRET_CIPHER).update(req.body.password).digest(CIPHER_BASE);
+		const token = crypto.randomBytes(16).toString('hex');
 		req.body.captured_id = req.file.key || req.file.filename;
+		req.body.token = token;
 
 		db.newAdmin(req.body, password, res);
 	})
@@ -421,10 +426,6 @@ app.get('/api/vehicle', (req, res) => {
 
 app.get('/api/vehicle/:id', (req, res) => {
 	db.getVehicle(req.params, res);
-})
-
-app.get('/api/vehicle/plate/:id', (req, res) => {
-	db.getVehiclePlate(req.params, res);
 })
 
 app.post('/api/vehicle', jwtMW, (req, res) => {
@@ -467,7 +468,7 @@ app.post('/api/ticket', (req, res) => {
 		var upload = multer({
 			storage: storageTicket,
 			limits: {
-				fileSize: 1024 * 1024
+				fileSize: 5 * 1024 * 1024
 			},
 			fileFilter: fileFilter
 		}).single('fileImage');
@@ -475,7 +476,7 @@ app.post('/api/ticket', (req, res) => {
 		var upload = multer({
 			storage: storagetTicketsAWS,
 			limits: {
-				fileSize: 1024 * 1024
+				fileSize: 5 * 1024 * 1024
 			},
 			fileFilter: fileFilter
 		}).single('fileImage');
