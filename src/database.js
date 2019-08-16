@@ -873,7 +873,7 @@ module.exports = {
 	},
 	newVehicle: function (req, res) {
 		const waktu = new Date().toISOString();
-		var request = [req.body.vehicle_id, req.body.owner, req.body.brand, req.body.type, req.body.build_year, req.body.color, waktu, waktu]
+		var request = [req.body.id, req.body.owner, req.body.brand, req.body.type, req.body.build_year, req.body.color, waktu, waktu]
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
@@ -898,12 +898,12 @@ module.exports = {
 	},
 	updateVehicle: function (req, res) {
 		const waktu = new Date().toISOString();
-		var request = [req.body.owner, req.body.brand, req.body.type, req.body.build_year, req.body.color, waktu, req.params.id]
+		var request = [req.body.id, req.body.owner, req.body.brand, req.body.type, req.body.build_year, req.body.color, waktu, req.params.id]
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("UPDATE `data_kendaraan` SET `owner`=?, `brand`=?, `type`=?, `build_year`=?, `color`=?, `updated`=? WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("UPDATE `data_kendaraan` SET `id`=?,`owner`=?, `brand`=?, `type`=?, `build_year`=?, `color`=?, `updated`=? WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);

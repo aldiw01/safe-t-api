@@ -150,15 +150,9 @@ function fileFilter(req, file, cb) {
 
 app.post('/api/loginAdmin', (req, res) => {
 	const { email } = req.body;
-	console.log(req.body);
 	console.log("loginAdmin")
 
-	// const cipher = crypto.createCipheriv(ALGORITHM, CIPHER_KEY, CIPHER_IV);
-	// let password = cipher.update(req.body.password, 'utf8', 'hex');
-	// password += cipher.final('hex');
-
 	const password = crypto.createHmac(HASH_ALGORITHM, SECRET_CIPHER).update(req.body.password).digest(CIPHER_BASE);
-	console.log(password);
 
 	db.cekLoginAdmin(email, password, function (err, data) {
 		if (data.length === 1 && (data[0].status === "2" || data[0].status === "3")) {
