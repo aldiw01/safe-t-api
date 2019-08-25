@@ -873,12 +873,12 @@ module.exports = {
 	},
 	newVehicle: function (req, res) {
 		const waktu = new Date().toISOString();
-		var request = [req.body.id, req.body.owner, req.body.brand, req.body.type, req.body.build_year, req.body.color, waktu, waktu]
+		var request = [req.body.id.toUpperCase(), req.body.owner, req.body.brand, req.body.type, req.body.build_year, req.body.color, waktu, waktu]
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("INSERT INTO `data_kendaraan` (`id`, `owner`, `brand`, `type`, `build_year`, `color`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("INSERT INTO `data_kendaraan` (`id`, `owner`, `brand`, `type`, `build_year`, `color`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.send({
 					message: err.message,

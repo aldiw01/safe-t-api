@@ -278,7 +278,7 @@ app.post('/api/user', (req, res) => {
 		var upload = multer({
 			storage: storageUser,
 			limits: {
-				fileSize: 1024 * 1024
+				fileSize: 5 * 1024 * 1024
 			},
 			fileFilter: fileFilter
 		}).single('fileImage');
@@ -286,7 +286,7 @@ app.post('/api/user', (req, res) => {
 		var upload = multer({
 			storage: storageUsersAWS,
 			limits: {
-				fileSize: 1024 * 1024
+				fileSize: 5 * 1024 * 1024
 			},
 			fileFilter: fileFilter
 		}).single('fileImage');
@@ -313,6 +313,8 @@ app.post('/api/user', (req, res) => {
 
 		const password = crypto.createHmac(HASH_ALGORITHM, SECRET_CIPHER).update(req.body.password).digest(CIPHER_BASE);
 		const token = crypto.randomBytes(16).toString('hex');
+
+		// File name key used while in production and filename in development
 		req.body.captured_id = req.file.key || req.file.filename;
 		req.body.token = token;
 
@@ -333,7 +335,6 @@ app.delete('/api/user/ever/:id', jwtMW, (req, res) => {
 })
 
 app.delete('/api/user/all/ever', jwtMW, (req, res) => {
-	console.log('deleteUserAll')
 	db.deleteUserAll(req.params, res);
 })
 
@@ -357,7 +358,7 @@ app.post('/api/admin', (req, res) => {
 		var upload = multer({
 			storage: storageAdmin,
 			limits: {
-				fileSize: 1024 * 1024
+				fileSize: 5 * 1024 * 1024
 			},
 			fileFilter: fileFilter
 		}).single('fileImage');
@@ -365,7 +366,7 @@ app.post('/api/admin', (req, res) => {
 		var upload = multer({
 			storage: storageAdminsAWS,
 			limits: {
-				fileSize: 1024 * 1024
+				fileSize: 5 * 1024 * 1024
 			},
 			fileFilter: fileFilter
 		}).single('fileImage');
@@ -392,6 +393,8 @@ app.post('/api/admin', (req, res) => {
 
 		const password = crypto.createHmac(HASH_ALGORITHM, SECRET_CIPHER).update(req.body.password).digest(CIPHER_BASE);
 		const token = crypto.randomBytes(16).toString('hex');
+
+		// File name key used while in production and filename in development
 		req.body.captured_id = req.file.key || req.file.filename;
 		req.body.token = token;
 
@@ -414,7 +417,7 @@ app.delete('/api/admin/ever/:id', jwtMW, (req, res) => {
 /////////////////////////////////////////////////////////////////////////////////////////////
 // API Kendaraan
 
-app.get('/api/vehicle', (req, res) => {
+app.get('/api/vehicle', jwtMW, (req, res) => {
 	db.getVehicleAll(req.body, res);
 })
 
@@ -491,6 +494,7 @@ app.post('/api/ticket', (req, res) => {
 		// Everything went fine.
 		console.log('Upload success.');
 
+		// File name key used while in production and filename in development
 		req.body.documentation = req.file.key || req.file.filename;
 
 		db.newTicket(req.body, res);
