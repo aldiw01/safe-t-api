@@ -90,6 +90,18 @@ const storageUsersAWS = multerS3({
 	}
 })
 
+const storageVehiclesAWS = multerS3({
+	s3: s3,
+	bucket: process.env.APP_AWS_BUCKET + '/vehicles',
+	contentType: multerS3.AUTO_CONTENT_TYPE,
+	metadata: function (req, file, cb) {
+		cb(null, { fieldName: "Safe-T Vehicle" });
+	},
+	key: function (req, file, cb) {
+		cb(null, Date.now().toString())
+	}
+})
+
 function fileFilter(req, file, cb) {
 	if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
 		cb(null, true);
@@ -110,6 +122,15 @@ const storageAdmin = multer.diskStorage({
 	}
 })
 
+const storageTicket = multer.diskStorage({
+	destination: function (req, file, cb) {
+		cb(null, __dirname + '/image/ticket/');
+	},
+	filename: function (req, file, cb) {
+		cb(null, new Date().toISOString().replace(/:/g, '-') + '_' + file.originalname);
+	}
+})
+
 const storageUser = multer.diskStorage({
 	destination: function (req, file, cb) {
 		cb(null, __dirname + '/image/user/');
@@ -122,15 +143,6 @@ const storageUser = multer.diskStorage({
 const storageVehicle = multer.diskStorage({
 	destination: function (req, file, cb) {
 		cb(null, __dirname + '/image/vehicle/');
-	},
-	filename: function (req, file, cb) {
-		cb(null, new Date().toISOString().replace(/:/g, '-') + '_' + file.originalname);
-	}
-})
-
-const storageTicket = multer.diskStorage({
-	destination: function (req, file, cb) {
-		cb(null, __dirname + '/image/ticket/');
 	},
 	filename: function (req, file, cb) {
 		cb(null, new Date().toISOString().replace(/:/g, '-') + '_' + file.originalname);
@@ -307,10 +319,6 @@ app.post('/api/user', (req, res) => {
 		// Everything went fine.
 		console.log('Upload success.');
 
-		// var mykey = crypto.createCipher('aes-128-cbc', SECRET_CIPHER);
-		// var password = mykey.update(req.body.password, 'utf8', 'hex')
-		// password += mykey.final('hex');
-
 		const password = crypto.createHmac(HASH_ALGORITHM, SECRET_CIPHER).update(req.body.password).digest(CIPHER_BASE);
 		const token = crypto.randomBytes(16).toString('hex');
 
@@ -387,10 +395,6 @@ app.post('/api/admin', (req, res) => {
 		// Everything went fine.
 		console.log('Upload success.');
 
-		// var mykey = crypto.createCipher('aes-128-cbc', SECRET_CIPHER);
-		// var password = mykey.update(req.body.password, 'utf8', 'hex')
-		// password += mykey.final('hex');
-
 		const password = crypto.createHmac(HASH_ALGORITHM, SECRET_CIPHER).update(req.body.password).digest(CIPHER_BASE);
 		const token = crypto.randomBytes(16).toString('hex');
 
@@ -426,11 +430,89 @@ app.get('/api/vehicle/:id', (req, res) => {
 })
 
 app.post('/api/vehicle', jwtMW, (req, res) => {
-	db.newVehicle(req, res);
+	if (process.env.NODE_ENV === "development") {
+		var upload = multer({
+			storage: storageVehicle,
+			limits: {
+				fileSize: 5 * 1024 * 1024
+			},
+			fileFilter: fileFilter
+		}).single('fileImage');
+	} else {
+		var upload = multer({
+			storage: storagetVehiclesAWS,
+			limits: {
+				fileSize: 5 * 1024 * 1024
+			},
+			fileFilter: fileFilter
+		}).single('fileImage');
+	}
+	upload(req, res, function (err) {
+		if (err instanceof multer.MulterError) {
+			// A Multer error occurred when uploading.
+			res.send(err);
+			return
+		} else if (err) {
+			// An unknown error occurred when uploading.
+			res.send(err);
+			return
+		} else if (req.file == undefined) {
+			res.send('index', { message: 'No file selected!' })
+			return
+		}
+		// Everything went fine.
+		console.log('Upload success.');
+
+		// File name key used while in production and filename in development
+		req.body.documentation = req.file.key || req.file.filename;
+
+		db.newVehicle(req.body, res);
+	})
 })
 
 app.put('/api/vehicle/:id', jwtMW, (req, res) => {
-	db.updateVehicle(req, res);
+	if (process.env.NODE_ENV === "development") {
+		var upload = multer({
+			storage: storageVehicle,
+			limits: {
+				fileSize: 5 * 1024 * 1024
+			},
+			fileFilter: fileFilter
+		}).single('fileImage');
+	} else {
+		var upload = multer({
+			storage: storagetVehiclesAWS,
+			limits: {
+				fileSize: 5 * 1024 * 1024
+			},
+			fileFilter: fileFilter
+		}).single('fileImage');
+	}
+	upload(req, res, function (err) {
+		if (err instanceof multer.MulterError) {
+			// A Multer error occurred when uploading.
+			res.send(err);
+			return
+		} else if (err) {
+			// An unknown error occurred when uploading.
+			res.send(err);
+			return
+		} else if (req.file == undefined) {
+			console.log('No file selected!');
+		}
+		// Everything went fine.
+		console.log('Upload success.');
+
+		if (req.file === undefined) {
+			db.updateVehicleData(req, res);
+		}
+		else {
+			// File name key used while in production and filename in development
+			req.body.documentation = req.file.key || req.file.filename;
+
+			db.updateVehicleDataImg(req, res);
+		}
+	})
 })
 
 app.delete('/api/vehicle/:id', jwtMW, (req, res) => {
@@ -652,6 +734,26 @@ if (process.env.NODE_ENV === "development") {
 	app.get('/api/image/user/:imageID', (req, res) => {
 		var params = {
 			Bucket: process.env.APP_AWS_BUCKET + '/users',
+			Key: req.params.imageID
+		};
+		s3.getObject(params, function (err, data) {
+			if (err) {
+				res.send({
+					message: err.message,
+					statusCode: err.statusCode
+				});
+				console.log(err);
+				return
+			}
+			res.writeHead(200, { 'Content-Type': data.ContentType });
+			res.write(data.Body, 'binary');
+			res.end(null, 'binary');
+		});
+	})
+
+	app.get('/api/image/vehicle/:imageID', (req, res) => {
+		var params = {
+			Bucket: process.env.APP_AWS_BUCKET + '/vehicles',
 			Key: req.params.imageID
 		};
 		s3.getObject(params, function (err, data) {

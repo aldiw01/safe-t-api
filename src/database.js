@@ -829,8 +829,9 @@ module.exports = {
 					type: items[3],
 					build_year: items[4],
 					color: items[5],
-					created: items[6],
-					updated: items[7]
+					documentation: items[6],
+					created: items[7],
+					updated: items[8]
 				});
 			});
 			if (data.length < 1) {
@@ -859,8 +860,9 @@ module.exports = {
 					type: items[3],
 					build_year: items[4],
 					color: items[5],
-					created: items[6],
-					updated: items[7]
+					documentation: items[6],
+					created: items[7],
+					updated: items[8]
 				});
 			});
 			if (data.length < 1) {
@@ -873,12 +875,12 @@ module.exports = {
 	},
 	newVehicle: function (req, res) {
 		const waktu = new Date().toISOString();
-		var request = [req.body.id.toUpperCase(), req.body.owner, req.body.brand, req.body.type, req.body.build_year, req.body.color, waktu, waktu]
+		var request = [req.id.toUpperCase(), req.owner, req.brand, req.type, req.build_year, req.color, req.documentation, waktu, waktu]
 		if (request.includes(undefined) || request.includes("")) {
 			res.send({ message: 'Bad Request: Parameters cannot empty.' });
 			return
 		}
-		c.query("INSERT INTO `data_kendaraan` (`id`, `owner`, `brand`, `type`, `build_year`, `color`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
+		c.query("INSERT INTO `data_kendaraan` (`id`, `owner`, `brand`, `type`, `build_year`, `color`, `documentation`, `created`, `updated`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.send({
 					message: err.message,
@@ -896,7 +898,7 @@ module.exports = {
 		});
 		c.end();
 	},
-	updateVehicle: function (req, res) {
+	updateVehicleData: function (req, res) {
 		const waktu = new Date().toISOString();
 		var request = [req.body.id, req.body.owner, req.body.brand, req.body.type, req.body.build_year, req.body.color, waktu, req.params.id]
 		if (request.includes(undefined) || request.includes("")) {
@@ -904,6 +906,28 @@ module.exports = {
 			return
 		}
 		c.query("UPDATE `data_kendaraan` SET `id`=?,`owner`=?, `brand`=?, `type`=?, `build_year`=?, `color`=?, `updated`=? WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
+			if (err) {
+				res.status(500).send({ message: "Error 500: Internal Server Error" });
+				console.log(err);
+				return
+			}
+
+			res.json({
+				affectedRows: rows.info.affectedRows,
+				message: "Vehicle has updated successfully",
+				success: true
+			});
+		});
+		c.end();
+	},
+	updateVehicleDataImg: function (req, res) {
+		const waktu = new Date().toISOString();
+		var request = [req.body.id, req.body.owner, req.body.brand, req.body.type, req.body.build_year, req.body.color, req.body.documentation, waktu, req.params.id]
+		if (request.includes(undefined) || request.includes("")) {
+			res.send({ message: 'Bad Request: Parameters cannot empty.' });
+			return
+		}
+		c.query("UPDATE `data_kendaraan` SET `id`=?,`owner`=?, `brand`=?, `type`=?, `build_year`=?, `color`=?, `documentation`=?, `updated`=? WHERE `id`=?", request, { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
