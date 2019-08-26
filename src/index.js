@@ -440,7 +440,7 @@ app.post('/api/vehicle', jwtMW, (req, res) => {
 		}).single('fileImage');
 	} else {
 		var upload = multer({
-			storage: storagetVehiclesAWS,
+			storage: storageVehiclesAWS,
 			limits: {
 				fileSize: 5 * 1024 * 1024
 			},
@@ -481,7 +481,7 @@ app.put('/api/vehicle/:id', jwtMW, (req, res) => {
 		}).single('fileImage');
 	} else {
 		var upload = multer({
-			storage: storagetVehiclesAWS,
+			storage: storageVehiclesAWS,
 			limits: {
 				fileSize: 5 * 1024 * 1024
 			},
