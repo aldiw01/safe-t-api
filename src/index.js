@@ -886,7 +886,7 @@ app.use(function (err, req, res, next) {
 });
 
 app.get('/', (req, res) => {
-	res.redirect('https://safe-t.netlify.com');
+	res.redirect('https://safet.id');
 });
 
 // Starting the app on PORT 3000
