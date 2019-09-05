@@ -1175,8 +1175,7 @@ module.exports = {
 	},
 	closeTicket: function (req, res) {
 		const waktu = new Date().toISOString();
-		// c.query("SELECT t1.id,t2.name AS reporter,t3.owner AS violator,t3.vehicle_id,t4.type AS violation_type,t1.detail,t1.incident_date,t1.documentation,t1.status,t1.created,t1.updated FROM data_pelanggaran t1 LEFT JOIN (data_user t2, data_kendaraan t3, violation_list t4) ON (t2.id=t1.reporter_id AND t3.id=t1.vehicle_id AND t4.id=t1.violation_type)", null, { metadata: true, useArray: true }, function (err, rows) {
-		c.query("SELECT t1.reporter_id, t2.point, t3.status FROM `data_pelanggaran` t1 INNER JOIN `data_point` t2 ON t1.id=? INNER JOIN `history` t3 ON t1.id=?", [req.id, req.id], { metadata: true, useArray: true }, function (err, rows) {
+		c.query("SELECT t1.reporter_id, t2.point FROM `data_pelanggaran` t1 INNER JOIN `data_point` t2 ON t1.id=?", [req.id], { metadata: true, useArray: true }, function (err, rows) {
 			if (err) {
 				res.status(500).send({ message: "Error 500: Internal Server Error" });
 				console.log(err);
@@ -1186,13 +1185,6 @@ module.exports = {
 			if (rows.info.numRows !== '0') {
 				rows.forEach(function (items) {
 					c.query("UPDATE `data_pelanggaran` SET `status`=1, `updated`=? WHERE `id`=?", [waktu, req.id], { metadata: true, useArray: true }, function (err, rows) {
-						if (err) {
-							res.status(500).send({ message: "Error 500: Internal Server Error" });
-							console.log(err);
-							return
-						}
-					});
-					c.query("UPDATE `history` SET `status`=1, `updated`=? WHERE `id`=?", [waktu, req.id], { metadata: true, useArray: true }, function (err, rows) {
 						if (err) {
 							res.status(500).send({ message: "Error 500: Internal Server Error" });
 							console.log(err);
