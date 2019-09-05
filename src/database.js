@@ -1191,13 +1191,6 @@ module.exports = {
 							return
 						}
 					});
-					c.query("UPDATE `history` SET `status`=1, `updated`=? WHERE `id`=?", [waktu, req.id], { metadata: true, useArray: true }, function (err, rows) {
-						if (err) {
-							res.status(500).send({ message: "Error 500: Internal Server Error" });
-							console.log(err);
-							return
-						}
-					});
 					c.query("UPDATE `data_point` SET `point`=?, `updated`=? WHERE `user_id`=?", [parseInt(items[1]) + 10, waktu, items[0]], { metadata: true, useArray: true }, function (err, rows) {
 						if (err) {
 							res.status(500).send({ message: "Error 500: Internal Server Error" });
